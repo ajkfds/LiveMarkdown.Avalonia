@@ -16,11 +16,13 @@ public partial class App : Application, ILogSink
 
         MarkdownRenderer.ConfigurePipeline += x => x
             .UseMermaid()
+            .UseWaveDrom()
             .UseExtendedMathematics();
         MarkdownNode.Edit(builder => builder
             .Register<MathInlineNode>()
             .Register<MathBlockNode>()
             .Register<MermaidBlockNode>()
+            .Register<WaveDromBlockNode>()
         );
 
         AsyncImageLoader.DefaultDecoders =

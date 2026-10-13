@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\..\3rd\shad-ui\src\ShadUI\ShadUI.csproj"/>
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj"/>
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj"/>
+    <ProjectReference Include="..\..\LiveMarkdown.Avalonia.WaveDrom\LiveMarkdown.Avalonia.WaveDrom.csproj"/>
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia.Svg.Skia\LiveMarkdown.Avalonia.Svg.Skia.csproj"/>
     <ProjectReference Include="..\..\LiveMarkdown.Avalonia\LiveMarkdown.Avalonia.csproj"/>
   </ItemGroup>
@@ -36,6 +37,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Mermaid.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="samples\WaveDrom.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="samples\Test.md">
