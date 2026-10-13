@@ -3,7 +3,6 @@
   <Style Selector="md|WaveDromPresenter">
     <Setter Property="FontSize" Value="{DynamicResource FontSizeM}"/>
     <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}"/>
-    <Setter Property="LineStroke" Value="{DynamicResource BorderColor}"/>
-    <Setter Property="MarkerBrush" Value="{DynamicResource BorderColor}"/>
+    <Setter Property="MarkerBrush" Value="{DynamicResource SecondaryCardBackgroundColor}"/>
   </Style>
 </Styles>

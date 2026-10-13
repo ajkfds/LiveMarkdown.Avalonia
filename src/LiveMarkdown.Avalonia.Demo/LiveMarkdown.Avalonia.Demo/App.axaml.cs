@@ -1,9 +1,9 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
-using ClassicDiagnostics.Avalonia;
+//using ClassicDiagnostics.Avalonia;
 using LiveMarkdown.Avalonia.Demo.Views;
 
 namespace LiveMarkdown.Avalonia.Demo;
@@ -34,7 +34,7 @@ public partial class App : Application, ILogSink
 
         AvaloniaXamlLoader.Load(this);
 
-        this.AttachDevTools();
+//        this.AttachDevTools();
     }
 
     public override void OnFrameworkInitializationCompleted()

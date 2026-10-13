@@ -1,6 +1,6 @@
 # WaveDrom Timing Diagrams
 
-## Simple digital signals
+## Clock and simple signals
 
 ```wavedrom
 { signal: [
