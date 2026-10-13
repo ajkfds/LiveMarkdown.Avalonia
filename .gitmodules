@@ -1,3 +1,6 @@
 [submodule "3rd/shad-ui"]
 	path = 3rd/shad-ui
 	url = https://github.com/Sylinko/shad-ui
+[submodule "wavedrom"]
+	path = wavedrom
+	url = https://github.com/wavedrom/wavedrom.git
