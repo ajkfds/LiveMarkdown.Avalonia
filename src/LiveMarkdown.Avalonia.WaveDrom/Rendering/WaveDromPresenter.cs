@@ -290,21 +290,21 @@ public class WaveDromPresenter : Control
         // area (xmax * xs / 2), not over the left gutter.
         var waveCenterX = xg + diagram.XMax * WaveDromParser.Xs / 2;
 
-        // Head text.
+        // Head text (official captext fill:#000).
         if (diagram.HeadText is { } headText)
         {
-            DrawMiddleAnchoredText(dc, headText, typeface, stroke, waveCenterX, y + 14);
+            DrawMiddleAnchoredText(dc, headText, typeface, TextBrush, waveCenterX, y + 14);
             y += 20;
         }
 
-        // Head tick/tock numbers (tick at i*mmstep, tock at i*mmstep + mmstep/2).
+        // Head tick/tock numbers (class "muted"; tick at i*mmstep, tock at +mmstep/2).
         if (diagram.HeadTick.Length > 0 || diagram.HeadTock.Length > 0)
         {
             for (var i = 0; i < diagram.HeadTick.Length; i++)
             {
                 if (diagram.HeadTick[i] is { } tick)
                 {
-                    DrawMiddleAnchoredText(dc, tick, typeface, stroke, xg + i * mmStep, y + 12);
+                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, y + 12);
                 }
             }
 
@@ -312,7 +312,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.HeadTock[i] is { } tock)
                 {
-                    DrawMiddleAnchoredText(dc, tock, typeface, stroke, xg + i * mmStep + mmStep / 2, y + 12);
+                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, y + 12);
                 }
             }
 
@@ -338,9 +338,10 @@ public class WaveDromPresenter : Control
             var lane = diagram.Lanes[i];
             var laneY = lanesTop + i * WaveDromParser.Yo + WaveDromParser.Y0;
 
+            // Signal names use the official "info" class (#0041c4).
             if (lane.Name.Length > 0)
             {
-                DrawRightAlignedText(dc, lane.Name, typeface, stroke, xg - 10, laneY + 8);
+                DrawRightAlignedText(dc, lane.Name, typeface, InfoBrush, xg - 10, laneY + 8);
             }
 
             var phaseOffset = lane.Phase != 0 ? (Math.Ceiling(2 * -lane.Phase) - 0) : 0;
@@ -359,7 +360,8 @@ public class WaveDromPresenter : Control
                 if (lane.Labels[m] is { } label)
                 {
                     var labelX = laneX + markers[m] * WaveDromParser.Xs + WaveDromXlabel;
-                    DrawMiddleAnchoredText(dc, label, typeface, stroke, labelX, laneY + WaveDromYm);
+                    // Data labels use the default text fill (black).
+                    DrawMiddleAnchoredText(dc, label, typeface, TextBrush, labelX, laneY + WaveDromYm);
                 }
             }
         }
@@ -396,8 +398,8 @@ public class WaveDromPresenter : Control
             {
                 var tx = group.X - 10;
                 var ty = lanesTop + WaveDromParser.Yo * (group.Y + group.Height / 2d);
-                // Draw rotated group label around the vertical center point.
-                DrawRotatedText(dc, groupName, typeface, stroke, tx, ty);
+                // Group labels use the official "info" class (#0041c4).
+                DrawRotatedText(dc, groupName, typeface, InfoBrush, tx, ty);
             }
         }
 
@@ -417,7 +419,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTick[i] is { } tick)
                 {
-                    DrawMiddleAnchoredText(dc, tick, typeface, stroke, xg + i * mmStep, y + 12);
+                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, y + 12);
                 }
             }
 
@@ -425,17 +427,17 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTock[i] is { } tock)
                 {
-                    DrawMiddleAnchoredText(dc, tock, typeface, stroke, xg + i * mmStep + mmStep / 2, y + 12);
+                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, y + 12);
                 }
             }
 
             y += 16;
         }
 
-        // Foot text (centered over the wave area).
+        // Foot text (official captext fill:#000, centered over the wave area).
         if (diagram.FootText is { } footText)
         {
-            DrawMiddleAnchoredText(dc, footText, typeface, stroke, waveCenterX, y + 14);
+            DrawMiddleAnchoredText(dc, footText, typeface, TextBrush, waveCenterX, y + 14);
         }
     }
 
@@ -446,6 +448,13 @@ public class WaveDromPresenter : Control
 
     // Official render-arcs.js arrow color.
     private static readonly Color ArcColor = Color.FromRgb(0x00, 0x41, 0xC4);
+
+    // Official default skin text classes:
+    //   .muted -> #aaa (head/foot tick/tock numbers)
+    //   .info  -> #0041c4 (signal names and group labels)
+    private static readonly IBrush MutedBrush = new SolidColorBrush(Color.FromRgb(0xAA, 0xAA, 0xAA));
+    private static readonly IBrush InfoBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x41, 0xC4));
+    private static readonly IBrush TextBrush = Brushes.Black;
 
     /// <summary>
     /// Draws the <c>node</c>/<c>edge</c> arrows, ported from the official

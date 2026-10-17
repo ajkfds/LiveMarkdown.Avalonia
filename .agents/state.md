@@ -31,6 +31,10 @@
 
 ## 完了済みタスク
 
+- WaveDrom のテキスト色を公式スキンのクラス色に修正
+    - tick/tock を `muted`（#aaa グレー）に。
+    - 信号名・グループ名を `info`（#0041c4 青）に。
+    - head/foot テキスト・data ラベルは既定の黒。
 - WaveDrom の head/foot tick/tock/every を修正
     - tick/tock の個数を「レーン数」ではなく波形長（`xmax / (2*hscale)`）基準に修正
       （公式 `render-marks.js` の `marks` に一致）。tick=marks+1、tock=marks。
