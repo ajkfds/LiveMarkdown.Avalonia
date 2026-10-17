@@ -352,6 +352,61 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_ParsesTspanArrayHeadFoot()
+    {
+        // Step 7, last sample: head/foot text as a tspan tree.
+        var diagram = WaveDromParser.Parse(
+            """
+            {signal: [
+              {name:'clk', wave: 'p.....PPPPp....' },
+              {name:'dat', wave: 'x....2345x.....', data: 'a b c d' },
+              {name:'req', wave: '0....1...0.....' }
+            ],
+            head: {text:
+              ['tspan',
+                ['tspan', {class:'error h1'}, 'error '],
+                ['tspan', {class:'muted h5'}, 'muted '],
+                'default ',
+                ['tspan', {fill:'pink', 'font-weight':'bold', 'font-style':'italic'}, 'pink-bold-italic']
+              ]
+            },
+            foot: {text:
+              ['tspan', 'E=mc',
+                ['tspan', {dy:'-5'}, '2'],
+                ['tspan', {dy: '5'}, '. '],
+                ['tspan', {'font-size':'25'}, 'B '],
+                ['tspan', {'text-decoration':'overline'},'over '],
+                ['tspan', {'baseline-shift':'super'}, 'super ']
+              ],tock:-5
+            }
+            }
+            """);
+
+        // Head spans carry the tspan styles.
+        Assert.That(diagram.HeadTextSpans, Is.Not.Empty);
+        Assert.That(diagram.HeadText, Is.EqualTo("error muted default pink-bold-italic"));
+
+        var errSpan = diagram.HeadTextSpans.Single(s => s.Text == "error ");
+        Assert.That(errSpan.ClassName, Is.EqualTo("error h1"));
+
+        var pinkSpan = diagram.HeadTextSpans.Single(s => s.Text == "pink-bold-italic");
+        Assert.That(pinkSpan.Fill, Is.EqualTo("pink"));
+        Assert.That(pinkSpan.Bold, Is.True);
+        Assert.That(pinkSpan.Italic, Is.True);
+
+        // Foot spans carry dy / font-size / decoration / baseline-shift.
+        Assert.That(diagram.FootText, Is.EqualTo("E=mc2. B over super "));
+        var supSpan = diagram.FootTextSpans.Single(s => s.Text == "super ");
+        Assert.That(supSpan.Superscript, Is.True);
+
+        var overSpan = diagram.FootTextSpans.Single(s => s.Text == "over ");
+        Assert.That(overSpan.Overline, Is.True);
+
+        var bigSpan = diagram.FootTextSpans.Single(s => s.Text == "B ");
+        Assert.That(bigSpan.FontSize, Is.EqualTo(25));
+    }
+
+    [Test]
     public void Measure_EdgeDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter

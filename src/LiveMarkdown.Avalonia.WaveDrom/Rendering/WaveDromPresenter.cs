@@ -290,10 +290,10 @@ public class WaveDromPresenter : Control
         // area (xmax * xs / 2), not over the left gutter.
         var waveCenterX = xg + diagram.XMax * WaveDromParser.Xs / 2;
 
-        // Head text (official captext fill:#000).
-        if (diagram.HeadText is { } headText)
+        // Head text (official captext fill:#000, centered over the wave area).
+        if (diagram.HeadTextSpans.Length > 0)
         {
-            DrawMiddleAnchoredText(dc, headText, typeface, TextBrush, waveCenterX, y + 14);
+            DrawTextSpans(dc, diagram.HeadTextSpans, typeface, waveCenterX, y + 14);
             y += 20;
         }
 
@@ -435,9 +435,9 @@ public class WaveDromPresenter : Control
         }
 
         // Foot text (official captext fill:#000, centered over the wave area).
-        if (diagram.FootText is { } footText)
+        if (diagram.FootTextSpans.Length > 0)
         {
-            DrawMiddleAnchoredText(dc, footText, typeface, TextBrush, waveCenterX, y + 14);
+            DrawTextSpans(dc, diagram.FootTextSpans, typeface, waveCenterX, y + 14);
         }
     }
 
@@ -876,6 +876,129 @@ public class WaveDromPresenter : Control
             FontSize,
             brush);
         dc.DrawText(formatted, new Point(centerX - formatted.Width / 2, baselineY - formatted.Baseline));
+    }
+
+    /// <summary>
+    /// Draws a styled head/foot caption as a horizontally-centered run of
+    /// spans, honoring per-tspan fill, class, size, decoration, and baseline
+    /// shift (render-marks.js captext + tspan attributes).
+    /// </summary>
+    private void DrawTextSpans(DrawingContext dc, WaveDromTextSpan[] spans, Typeface typeface, double centerX, double baselineY)
+    {
+        if (spans.Length == 0)
+        {
+            return;
+        }
+
+        // Measure each span to compute the total run width for centering.
+        var formatted = new FormattedText?[spans.Length];
+        var totalWidth = 0d;
+        for (var i = 0; i < spans.Length; i++)
+        {
+            var span = spans[i];
+            formatted[i] = new FormattedText(
+                span.Text,
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                BuildTypeface(typeface, span),
+                span.FontSize ?? FontSize,
+                ResolveSpanBrush(span));
+            totalWidth += formatted[i]!.Width;
+        }
+
+        // Lay spans out left-to-right from the centered origin.
+        var x = centerX - totalWidth / 2;
+        for (var i = 0; i < spans.Length; i++)
+        {
+            var span = spans[i];
+            var ft = formatted[i]!;
+            var baseline = baselineY - span.Dy;
+            if (span.Superscript)
+            {
+                baseline -= FontSize * 0.4;
+            }
+            else if (span.Subscript)
+            {
+                baseline += FontSize * 0.2;
+            }
+
+            var drawY = baseline - ft.Baseline;
+            dc.DrawText(ft, new Point(x, drawY));
+
+            if (span.Overline)
+            {
+                dc.DrawLine(new Pen(ResolveSpanBrush(span), 1), new Point(x, drawY), new Point(x + ft.Width, drawY));
+            }
+
+            if (span.Underline)
+            {
+                dc.DrawLine(new Pen(ResolveSpanBrush(span), 1), new Point(x, drawY + ft.Height), new Point(x + ft.Width, drawY + ft.Height));
+            }
+
+            x += ft.Width;
+        }
+    }
+
+    private static Typeface BuildTypeface(Typeface baseTypeface, WaveDromTextSpan span)
+    {
+        if (!span.Bold && !span.Italic)
+        {
+            return baseTypeface;
+        }
+
+        var style = span.Italic ? FontStyle.Italic : baseTypeface.Style;
+        var weight = span.Bold ? FontWeight.Bold : baseTypeface.Weight;
+        return new Typeface(baseTypeface.FontFamily, style, weight);
+    }
+
+    /// <summary>Resolves a span's foreground from its explicit fill or skin class.</summary>
+    private static IBrush ResolveSpanBrush(WaveDromTextSpan span)
+    {
+        if (span.Fill is { Length: > 0 } fill)
+        {
+            try
+            {
+                return new SolidColorBrush(Color.Parse(fill));
+            }
+            catch
+            {
+                // Fall through to class/default resolution on parse failure.
+            }
+        }
+
+        if (span.ClassName is { Length: > 0 } className)
+        {
+            var brush = ResolveClassBrush(className);
+            if (brush is not null)
+            {
+                return brush;
+            }
+        }
+
+        return TextBrush;
+    }
+
+    /// <summary>Maps official skin text classes (info/muted/warning/error/success) to brushes.</summary>
+    private static IBrush? ResolveClassBrush(string className)
+    {
+        foreach (var token in className.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            switch (token)
+            {
+                case "muted":
+                    return MutedBrush;
+                case "info":
+                    return InfoBrush;
+                case "warning":
+                    return new SolidColorBrush(Color.FromRgb(0xF6, 0xB9, 0x00));
+                case "error":
+                    return new SolidColorBrush(Color.FromRgb(0xF6, 0x00, 0x00));
+                case "success":
+                    return new SolidColorBrush(Color.FromRgb(0x00, 0xAB, 0x00));
+            }
+        }
+
+        return null;
     }
 
     private void DrawRightAlignedText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double right, double y)

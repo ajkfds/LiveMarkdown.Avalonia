@@ -31,6 +31,12 @@
 
 ## 完了済みタスク
 
+- WaveDrom の head/foot tspan 配列形式（リッチテキスト）に対応
+    - `text` が tspan ツリー（`['tspan', {...}, 'x', [...]]`）の場合をパースし、
+      `WaveDromTextSpan`（fill / class / font-size / bold / italic / overline /
+      underline / baseline-shift / dy）へ変換。
+    - プレゼンタで `DrawTextSpans` により中央揃えで複数スパンを描画。
+      上付き/下付き・上線・下線・dy シフト・クラス色（info/muted/warning/error/success）に対応。
 - WaveDrom のテキスト色を公式スキンのクラス色に修正
     - tick/tock を `muted`（#aaa グレー）に。
     - 信号名・グループ名を `info`（#0041c4 青）に。

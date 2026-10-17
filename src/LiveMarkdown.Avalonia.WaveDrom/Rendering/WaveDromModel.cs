@@ -3,6 +3,39 @@ using System.Text.Json;
 namespace LiveMarkdown.Avalonia;
 
 /// <summary>
+/// A styled run of text. Plain head/foot <c>text</c> strings produce a single
+/// span with default styling; tspan arrays (e.g. <c>['tspan', {...}, 'x']</c>)
+/// produce multiple spans carrying per-tspan fill/class/size options.
+/// </summary>
+public sealed class WaveDromTextSpan
+{
+    public required string Text { get; init; }
+
+    /// <summary>Explicit fill color (e.g. "pink"), if any.</summary>
+    public string? Fill { get; init; }
+
+    /// <summary>Skin/heading class list (e.g. "error h1"), if any.</summary>
+    public string? ClassName { get; init; }
+
+    /// <summary>Font size override (e.g. 25), if any.</summary>
+    public double? FontSize { get; init; }
+
+    public bool Bold { get; init; }
+    public bool Italic { get; init; }
+    public bool Overline { get; init; }
+    public bool Underline { get; init; }
+
+    /// <summary>True for a superscript (baseline-shift: super).</summary>
+    public bool Superscript { get; init; }
+
+    /// <summary>True for a subscript (baseline-shift: sub).</summary>
+    public bool Subscript { get; init; }
+
+    /// <summary>Vertical shift in px from tspan dy (positive = up in SVG).</summary>
+    public double Dy { get; init; }
+}
+
+/// <summary>
 /// Parsed WaveDrom timing diagram model, ported from the official
 /// WaveDrom JS pipeline (parse-wave-lanes / parse-wave-lane / gen-brick).
 /// </summary>
@@ -10,8 +43,14 @@ public sealed class WaveDromDiagram
 {
     public required WaveDromLane[] Lanes { get; init; }
     public required WaveDromGroup[] Groups { get; init; }
-    public required string? HeadText { get; init; }
-    public required string? FootText { get; init; }
+    public required WaveDromTextSpan[] HeadTextSpans { get; init; }
+    public required WaveDromTextSpan[] FootTextSpans { get; init; }
+
+    /// <summary>Plain-text projection of <see cref="HeadTextSpans"/>.</summary>
+    public string? HeadText => HeadTextSpans.Length > 0 ? string.Concat(HeadTextSpans.Select(s => s.Text)) : null;
+
+    /// <summary>Plain-text projection of <see cref="FootTextSpans"/>.</summary>
+    public string? FootText => FootTextSpans.Length > 0 ? string.Concat(FootTextSpans.Select(s => s.Text)) : null;
     public required string?[] HeadTick { get; init; }
     public required string?[] HeadTock { get; init; }
     public required string?[] FootTick { get; init; }
@@ -120,17 +159,17 @@ public static class WaveDromParser
 
         // Official render-marks.js derives tick/tock counts from the wave
         // length (xmax / (2*hscale)), not the lane count.
-        string? headText = null, footText = null;
+        WaveDromTextSpan[] headTextSpans = [], footTextSpans = [];
         string?[] headTick = [], headTock = [], footTick = [], footTock = [];
         if (root.TryGetProperty("head", out var head) && head.ValueKind == JsonValueKind.Object)
         {
-            headText = GetText(head);
+            headTextSpans = ParseText(head);
             (headTick, headTock) = GetTicks(head, xMax, hScale);
         }
 
         if (root.TryGetProperty("foot", out var foot) && foot.ValueKind == JsonValueKind.Object)
         {
-            footText = GetText(foot);
+            footTextSpans = ParseText(foot);
             (footTick, footTock) = GetTicks(foot, xMax, hScale);
         }
 
@@ -146,8 +185,8 @@ public static class WaveDromParser
         {
             Lanes = [.. lanes],
             Groups = [.. groups],
-            HeadText = headText,
-            FootText = footText,
+            HeadTextSpans = headTextSpans,
+            FootTextSpans = footTextSpans,
             HeadTick = headTick,
             HeadTock = headTock,
             FootTick = footTick,
@@ -252,12 +291,167 @@ public static class WaveDromParser
     private static bool IsIdentifierPart(char c)
         => c == '_' || c == '$' || char.IsLetterOrDigit(c);
 
-    private static string? GetText(JsonElement element)
+    /// <summary>
+    /// Parses a head/foot <c>text</c> property. Accepts a plain string or the
+    /// official tspan tree form (e.g. <c>['tspan', {...}, 'x', ['tspan', ...]]</c>)
+    /// and flattens it into styled spans.
+    /// </summary>
+    private static WaveDromTextSpan[] ParseText(JsonElement element)
     {
-        return element.TryGetProperty("text", out var t) && t.ValueKind == JsonValueKind.String
-            ? t.GetString()
-            : null;
+        if (!element.TryGetProperty("text", out var text))
+        {
+            return [];
+        }
+
+        var spans = new List<WaveDromTextSpan>();
+        ParseTextNode(text, spans, new TextStyle());
+        return [.. spans];
     }
+
+    private sealed class TextStyle
+    {
+        public string? Fill;
+        public string? ClassName;
+        public double? FontSize;
+        public bool Bold;
+        public bool Italic;
+        public bool Overline;
+        public bool Underline;
+        public bool Superscript;
+        public bool Subscript;
+        public double Dy;
+
+        public TextStyle Clone() => (TextStyle)MemberwiseClone();
+    }
+
+    private static void ParseTextNode(JsonElement node, List<WaveDromTextSpan> spans, TextStyle style)
+    {
+        switch (node.ValueKind)
+        {
+            case JsonValueKind.String:
+                spans.Add(BuildSpan(node.GetString() ?? string.Empty, style));
+                return;
+            case JsonValueKind.Number:
+            case JsonValueKind.True:
+            case JsonValueKind.False:
+                spans.Add(BuildSpan(node.ToString(), style));
+                return;
+            case JsonValueKind.Array:
+                break;
+            default:
+                return;
+        }
+
+        // Array form: either ['tspan', {...}, children...] or a bare child list.
+        var items = node.EnumerateArray().ToArray();
+        var index = 0;
+        if (items.Length > 0 && items[0].ValueKind == JsonValueKind.String &&
+            items[0].GetString() == "tspan")
+        {
+            index = 1;
+            // Optional attribute object immediately after the tag.
+            if (index < items.Length && items[index].ValueKind == JsonValueKind.Object)
+            {
+                var childStyle = style.Clone();
+                ApplyTextAttributes(items[index], childStyle);
+                style = childStyle;
+                index++;
+            }
+        }
+
+        for (; index < items.Length; index++)
+        {
+            ParseTextNode(items[index], spans, style);
+        }
+    }
+
+    private static WaveDromTextSpan BuildSpan(string text, TextStyle style) => new()
+    {
+        Text = text,
+        Fill = style.Fill,
+        ClassName = style.ClassName,
+        FontSize = style.FontSize,
+        Bold = style.Bold,
+        Italic = style.Italic,
+        Overline = style.Overline,
+        Underline = style.Underline,
+        Superscript = style.Superscript,
+        Subscript = style.Subscript,
+        Dy = style.Dy,
+    };
+
+    private static void ApplyTextAttributes(JsonElement attributes, TextStyle style)
+    {
+        foreach (var prop in attributes.EnumerateObject())
+        {
+            switch (prop.Name)
+            {
+                case "fill":
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        style.Fill = prop.Value.GetString();
+                    }
+
+                    break;
+                case "class":
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        style.ClassName = prop.Value.GetString();
+                    }
+
+                    break;
+                case "font-size":
+                    style.FontSize = ParseDouble(prop.Value);
+                    break;
+                case "font-weight":
+                    style.Bold = prop.Value.ValueKind == JsonValueKind.String &&
+                                 prop.Value.GetString() is "bold" or "700" or "800" or "900";
+                    break;
+                case "font-style":
+                    style.Italic = prop.Value.ValueKind == JsonValueKind.String &&
+                                   prop.Value.GetString() == "italic";
+                    break;
+                case "text-decoration":
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var v = prop.Value.GetString();
+                        style.Overline = v?.Contains("overline", StringComparison.Ordinal) == true;
+                        style.Underline = v?.Contains("underline", StringComparison.Ordinal) == true;
+                    }
+
+                    break;
+                case "baseline-shift":
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var v = prop.Value.GetString();
+                        style.Superscript = v == "super";
+                        style.Subscript = v == "sub";
+                    }
+
+                    break;
+                case "dy":
+                    // SVG dy is positive downward; WaveDrom uses negative to raise.
+                    var dy = ParseDouble(prop.Value);
+                    if (dy is { } value)
+                    {
+                        style.Dy = value;
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static double? ParseDouble(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Number => value.GetDouble(),
+        JsonValueKind.String when double.TryParse(
+            value.GetString(),
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var d) => d,
+        _ => null,
+    };
 
     /// <summary>
     /// Port of the official render-marks.js ticktock(): expands tick/tock into
