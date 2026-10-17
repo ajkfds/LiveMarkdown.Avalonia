@@ -518,7 +518,13 @@ public class WaveDromPresenter : Control
         return pen;
     }
 
-    private void DrawRotatedText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double centerX, double centerY)
+    /// <summary>
+    /// Draws a vertically rotated label matching the official render-groups.js:
+    /// <c>g translate(x,y) / g rotate(270) / text text-anchor=middle</c>. The
+    /// label is centered on <paramref name="x"/> along the y axis (reading
+    /// bottom-to-top) with its baseline exactly on <paramref name="x"/>.
+    /// </summary>
+    private void DrawRotatedText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double x, double centerY)
     {
         if (text.Length == 0)
         {
@@ -533,13 +539,13 @@ public class WaveDromPresenter : Control
             FontSize,
             brush);
 
-        // Rotate -90 degrees around the given center point, then draw centered.
-        var translate = Matrix.CreateTranslation(centerX - formatted.Width / 2, centerY - formatted.Height / 2);
-        var rotate = Matrix.CreateRotation(-Math.PI / 2);
-        var pivot = Matrix.CreateTranslation(formatted.Width / 2, formatted.Height / 2);
-        var transform = pivot * rotate * translate;
+        // SVG applies the inner rotate(270) first, then the outer translate,
+        // so compose rotate * translate for Avalonia's apply-a-then-b order.
+        var transform = Matrix.CreateRotation(Math.PI * 3 / 2) * Matrix.CreateTranslation(x, centerY);
         using var _ = dc.PushTransform(transform);
-        dc.DrawText(formatted, new Point(0, 0));
+        // Baseline at (0,0) with text-anchor middle: center horizontally and
+        // place the baseline at y=0.
+        dc.DrawText(formatted, new Point(-formatted.Width / 2, -formatted.Baseline));
     }
 
     /// <summary>

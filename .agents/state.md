@@ -8,6 +8,10 @@
 
 ## 完了済みタスク
 
+- WaveDrom のグループテキスト位置を修正
+    - `DrawRotatedText` を公式 `render-groups.js` の変換
+      （`translate(x,y)` → `rotate(270)` → `text-anchor: middle`、ベースライン基準）
+      に合わせて書き直し。回転合成順序とベースライン配置のズレを解消。
 - WaveDrom のグループ表示位置を修正
     - パーサを公式 `rec.js` に忠実に移植し、グループの X 座標を固定の `level * 5` ではなく
       deltaX の累積方式（named=25px, unnamed=10px）で算出。
