@@ -4,7 +4,30 @@
 
 ## 進行中のタスク
 
-- なし
+- なし（WaveDrom プラグインの描画改善は一段落。ビルド成功・テスト全 190 件グリーン）
+
+## 現在の状態サマリ
+
+- ブランチ: `main`（origin/main より 8 コミット先行）
+- 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 190 件成功
+    - WaveDrom 関連は 2 フィクスチャ・計 24 件
+        - `WaveDromPresenterTests`（20 件、プラットフォーム不要）
+        - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
+- 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
+
+### テストが検証している範囲（重要）
+
+- 検証している: パーサ（JSON 寛容性・ブリック生成・data ラベル位置・グループ X 累積座標）、
+  スキン定義のパス文字列、SVG パスパーサのパース成否、幾何バウンズ、塗りつぶし有効性、
+  `Measure` のスモークテスト。
+- **検証していない: 実際のピクセル描画の見た目（レンダリング結果）**。
+  例: 「group テキストが画面上で正しい位置に見えるか」は現状テストで検出できない
+  （座標計算が正しくても描画 Transform が誤っていればすり抜ける）。
+- 描画の見た目まで担保するには、以下が未整備（Next Steps 参照）:
+    - 描画 Transform を関数化して座標マッピングをユニットテスト
+    - Avalonia Headless でのスナップショット（黄金画像）テスト
+    - 公式 `wavedrom/test/*.svg` との座標比較
 
 ## 完了済みタスク
 
@@ -54,6 +77,11 @@
 
 ## Next Steps
 
+- 描画結果（見た目）のテスト基盤を追加する（現状は座標計算までしか検証できていない）
+    - `DrawRotatedText` / `DrawMiddleAnchoredText` 等の Transform を関数抽出し、
+      点のマッピングをユニットテスト
+    - Avalonia Headless でレンダリングしたビットマップのスナップショット（黄金画像）テスト
+    - 公式 `wavedrom/test/*.svg` との図形座標の比較テスト
 - `.agents/wavedrom-todo.md` の未対応項目を順次実装する
     - スレーブ信号 (`wave: "s..."`)
     - `period` / `phase` の小数値完全対応
