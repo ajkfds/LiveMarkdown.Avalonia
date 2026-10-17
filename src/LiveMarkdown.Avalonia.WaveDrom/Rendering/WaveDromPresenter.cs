@@ -702,11 +702,13 @@ public class WaveDromPresenter : Control
     /// </summary>
     private void DrawTeeMarker(DrawingContext dc, Point tip, double direction)
     {
-        const double half = 4;
+        // Official skin tee marker: viewBox "0 0 1 6" -> ~6px long, thin stroke,
+        // so the bar reads as a hairline (not a bold tick).
+        const double half = 3;
         var perp = direction + Math.PI / 2;
         var a = new Point(tip.X - half * Math.Cos(perp), tip.Y - half * Math.Sin(perp));
         var b = new Point(tip.X + half * Math.Cos(perp), tip.Y + half * Math.Sin(perp));
-        var pen = new Pen(new SolidColorBrush(ArcColor), 2);
+        var pen = new Pen(new SolidColorBrush(ArcColor), 1);
         dc.DrawLine(pen, a, b);
     }
 
