@@ -902,7 +902,11 @@ public class WaveDromPresenter : Control
         }
 
         // Measure each span to compute the total run width for centering.
+        // SVG keeps trailing spaces between tspans (xml:space="preserve"), but
+        // FormattedText.Width drops trailing whitespace, so add the trailing
+        // space width back so inter-span gaps are preserved.
         var formatted = new FormattedText?[spans.Length];
+        var spanWidths = new double[spans.Length];
         var totalWidth = 0d;
         for (var i = 0; i < spans.Length; i++)
         {
@@ -910,14 +914,17 @@ public class WaveDromPresenter : Control
             var (classSizePx, classBold) = ResolveClassFont(span.ClassName);
             var spanSize = span.FontSize ?? classSizePx ?? FontSize;
             var spanBold = span.Bold || classBold;
+            var spanTypeface = BuildTypeface(typeface, span.Italic, spanBold);
+            var spanBrush = ResolveSpanBrush(span);
             formatted[i] = new FormattedText(
                 span.Text,
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
-                BuildTypeface(typeface, span.Italic, spanBold),
+                spanTypeface,
                 spanSize,
-                ResolveSpanBrush(span));
-            totalWidth += formatted[i]!.Width;
+                spanBrush);
+            spanWidths[i] = MeasureWidthWithTrailingSpaces(formatted[i]!, span.Text, spanTypeface, spanSize);
+            totalWidth += spanWidths[i];
         }
 
         // Lay spans out left-to-right from the centered origin.
@@ -949,8 +956,48 @@ public class WaveDromPresenter : Control
                 dc.DrawLine(new Pen(ResolveSpanBrush(span), 1), new Point(x, drawY + ft.Height), new Point(x + ft.Width, drawY + ft.Height));
             }
 
-            x += ft.Width;
+            x += spanWidths[i];
         }
+    }
+
+    /// <summary>
+    /// Returns the drawn width of a span including any trailing spaces, which
+    /// FormattedText.Width excludes but SVG preserves between tspans.
+    /// Uses a trailing sentinel glyph so the spaces are not trimmed.
+    /// </summary>
+    private static double MeasureWidthWithTrailingSpaces(
+        FormattedText formatted, string text, Typeface typeface, double fontSize)
+    {
+        var width = formatted.Width;
+
+        var trailing = 0;
+        for (var i = text.Length - 1; i >= 0 && text[i] == ' '; i--)
+        {
+            trailing++;
+        }
+
+        if (trailing == 0)
+        {
+            return width;
+        }
+
+        // Measure "text|" and subtract "|" to recover the trailing spaces.
+        const char sentinel = '|';
+        var withSentinel = new FormattedText(
+            text + sentinel,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            Brushes.Black);
+        var sentinelOnly = new FormattedText(
+            sentinel.ToString(),
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            Brushes.Black);
+        return withSentinel.Width - sentinelOnly.Width;
     }
 
     private static Typeface BuildTypeface(Typeface baseTypeface, bool italic, bool bold)

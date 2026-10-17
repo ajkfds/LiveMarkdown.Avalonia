@@ -31,6 +31,10 @@
 
 ## 完了済みタスク
 
+- WaveDrom の head/foot tspan の横間隔を修正
+    - SVG は `xml:space="preserve"` で tspan 間の末尾スペースを保持するが、
+      `FormattedText.Width` は末尾空白を除外するため要素間が詰まっていた。
+    - 末尾空白を含む幅（sentinel 方式で計測）を使い、スパン間隔を保持。
 - WaveDrom の head/foot レイアウトを公式方式に修正
     - head/foot の縦位置を固定オフセット方式（`yh0`/`yh1`/`yf0`/`yf1`、
       `lanesTop - (yh0?33:13)`、`gy + (yf0?45:25)`）に変更。インクリメンタル積み上げを廃止。
