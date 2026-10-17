@@ -8,6 +8,13 @@
 
 ## 完了済みタスク
 
+- WaveDrom の data ラベル（バス値）描画の修正
+    - `FindLaneMarkers` を `int[]` → `double[]` に変更し、公式 `find-lane-markers.js` の
+      `gcount - (lcount + 1) / 2` の半ブリック小数値を切り捨てずに保持。
+    - data ラベルを公式 `render-wave-lane.js` に合わせ、中心 X = `marker * xs + xlabel(6)`、
+      ベースライン Y = `ym(15)`、`text-anchor: middle` で描画（`DrawMiddleAnchoredText`）。
+    - ラベル位置の回帰テストを追加。
+
 - WaveDrom プラグイン (`src/LiveMarkdown.Avalonia.WaveDrom`) の緩い JSON 入力対応
     - 公式 WaveDrom の JavaScript 風オブジェクトリテラル（プロパティ名のクォート省略）・
       シングルクォート文字列をパース前に正規化 (`WaveDromParser.NormalizeSource`)。

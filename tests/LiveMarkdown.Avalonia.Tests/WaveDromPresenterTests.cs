@@ -103,4 +103,46 @@ public class WaveDromPresenterTests
         Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
         Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
     }
+
+    [Test]
+    public void FindLaneMarkers_ReturnsFractionalCentersForEvenBusSpans()
+    {
+        // Two adjacent bus halves ("v" bricks) center at x.5 between them, exactly
+        // like the official find-lane-markers.js (gcount - (lcount + 1) / 2).
+        var markers = WaveDromParser.FindLaneMarkers(["vvv-2", "vvv-2"]);
+
+        Assert.That(markers, Has.Length.EqualTo(1));
+        Assert.That(markers[0], Is.EqualTo(0.5));
+    }
+
+    [Test]
+    public void FindLaneMarkers_ReturnsIntegerCentersForOddBusSpans()
+    {
+        // Three bus halves center on the middle half-brick (integer position).
+        var markers = WaveDromParser.FindLaneMarkers(["vvv-2", "vvv-2", "vvv-2"]);
+
+        Assert.That(markers, Has.Length.EqualTo(1));
+        Assert.That(markers[0], Is.EqualTo(1));
+    }
+
+    [Test]
+    public void FindLaneMarkers_SeparatesDistinctBusSegments()
+    {
+        var markers = WaveDromParser.FindLaneMarkers(
+            ["111", "vvv-2", "vvv-2", "111", "vvv-2"]);
+
+        Assert.That(markers, Is.EqualTo(new[] { 1.5, 4.0 }));
+    }
+
+    [Test]
+    public void Parser_AssignsDataLabelsAfterPhaseUnseenMarkers()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [ { name: "data", wave: "x345x", data: ["A", "B"] } ] }
+            """);
+
+        Assert.That(diagram.Lanes, Has.Length.EqualTo(1));
+        Assert.That(diagram.Lanes[0].Labels, Is.EqualTo(new[] { "A", "B" }));
+    }
 }

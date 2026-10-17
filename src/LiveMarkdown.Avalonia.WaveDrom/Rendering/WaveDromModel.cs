@@ -623,9 +623,11 @@ public static class WaveDromParser
     }
 
     // Port of find-lane-marker.js — returns half-brick positions of data label centers.
-    internal static int[] FindLaneMarkers(IReadOnlyList<string> bricks)
+    // Positions are half-brick units and may be fractional (e.g. a two-half-brick bus
+    // centers at x.5), so the half-step must not be truncated.
+    internal static double[] FindLaneMarkers(IReadOnlyList<string> bricks)
     {
-        var result = new List<int>();
+        var result = new List<double>();
         var gcount = 0;
         var lcount = 0;
 
@@ -639,7 +641,7 @@ public static class WaveDromParser
             {
                 if (lcount != 0)
                 {
-                    result.Add(gcount - ((lcount + 1) / 2));
+                    result.Add(gcount - ((lcount + 1) / 2.0));
                     lcount = 0;
                 }
             }
@@ -649,7 +651,7 @@ public static class WaveDromParser
 
         if (lcount != 0)
         {
-            result.Add(gcount - ((lcount + 1) / 2));
+            result.Add(gcount - ((lcount + 1) / 2.0));
         }
 
         return [.. result];

@@ -305,14 +305,15 @@ public class WaveDromPresenter : Control
                 DrawBrick(dc, lane.Bricks[b], laneX + b * WaveDromParser.Xs, laneY, wavePen, markerPen);
             }
 
-            // Data labels at marker centers.
+            // Data labels at marker centers (official render-wave-lane.js:
+            // x = marker * xs + xlabel, y = ym, text-anchor: middle).
             var markers = WaveDromParser.FindLaneMarkers(lane.Bricks);
             for (var m = 0; m < markers.Length && m < lane.Labels.Length; m++)
             {
                 if (lane.Labels[m] is { } label)
                 {
-                    var labelX = laneX + markers[m] * WaveDromParser.Xs;
-                    DrawCenteredText(dc, label, typeface, stroke, labelX, laneY + 2, WaveDromParser.Xs * 2, WaveDromParser.Ys - 4);
+                    var labelX = laneX + markers[m] * WaveDromParser.Xs + WaveDromXlabel;
+                    DrawMiddleAnchoredText(dc, label, typeface, stroke, labelX, laneY + WaveDromYm);
                 }
             }
         }
@@ -384,6 +385,11 @@ public class WaveDromPresenter : Control
     }
 
     private const double WaveDromXg = 120;
+
+    // Official lane.js defaults: xlabel = 6 (data label x offset from the marker),
+    // ym = 15 (data label baseline y within the lane).
+    private const double WaveDromXlabel = 6;
+    private const double WaveDromYm = 15;
 
     /// <summary>
     /// Draws one half-brick (20x20 cell) identified by a WaveDrom skin id.
@@ -714,6 +720,27 @@ public class WaveDromPresenter : Control
         var transform = pivot * rotate * translate;
         using var _ = dc.PushTransform(transform);
         dc.DrawText(formatted, new Point(0, 0));
+    }
+
+    /// <summary>
+    /// Draws text horizontally centered on <paramref name="centerX"/> with its baseline
+    /// at <paramref name="baselineY"/>, matching SVG <c>text-anchor: middle</c> data labels.
+    /// </summary>
+    private void DrawMiddleAnchoredText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double centerX, double baselineY)
+    {
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        var formatted = new FormattedText(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            FontSize,
+            brush);
+        dc.DrawText(formatted, new Point(centerX - formatted.Width / 2, baselineY - formatted.Baseline));
     }
 
     private void DrawRightAlignedText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double right, double y)
