@@ -145,4 +145,54 @@ public class WaveDromPresenterTests
         Assert.That(diagram.Lanes, Has.Length.EqualTo(1));
         Assert.That(diagram.Lanes[0].Labels, Is.EqualTo(new[] { "A", "B" }));
     }
+
+    [Test]
+    public void Parser_BuildsBusBricksForDataWave()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [ { name: "data", wave: "x.345x", data: ["A", "B", "C"] } ] }
+            """);
+
+        var bricks = diagram.Lanes[0].Bricks;
+        // x . 3 4 5 x  -> xxx, xxx, vvv-3, vvv-4, vvv-5, xxx
+        Assert.That(bricks, Does.Contain("vvv-3"));
+        Assert.That(bricks, Does.Contain("vvv-4"));
+        Assert.That(bricks, Does.Contain("vvv-5"));
+    }
+
+    [Test]
+    public void Skin_DefinesOfficialBusAndUnknownBricks()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("vvv-2"), Is.True);
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("vvv-9"), Is.True);
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("xxx"), Is.True);
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("0mx"), Is.True);
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("xmd"), Is.True);
+            Assert.That(WaveDromSkin.Bricks.ContainsKey("vmv-2-3"), Is.True);
+            // "vvv-2" is the white box plus top/bottom strokes.
+            Assert.That(WaveDromSkin.Bricks["vvv-2"], Has.Length.EqualTo(3));
+            Assert.That(WaveDromSkin.Bricks["vvv-2"][0].Data, Is.EqualTo("M20,20 0,20 0,0 20,0"));
+        });
+    }
+
+    [Test]
+    public void Measure_DataDiagramRendersWithoutThrowing()
+    {
+        var presenter = new WaveDromPresenter
+        {
+            Text = """
+                   { signal: [
+                     { name: "clk",  wave: "p..........." },
+                     { name: "data", wave: "x.345x=68x...", data: ["A1", "A2", "A3", "A4", "B1", "B2"] }
+                   ]}
+                   """
+        };
+
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
 }

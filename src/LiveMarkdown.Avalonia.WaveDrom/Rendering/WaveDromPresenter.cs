@@ -105,6 +105,8 @@ public class WaveDromPresenter : Control
     private WaveDromDiagram? _diagram;
     private Exception? _error;
     private Size _size;
+    private readonly Dictionary<string, StreamGeometry> _brickGeometryCache = [];
+    private readonly Dictionary<string, IPen> _brickPenCache = [];
 
     static WaveDromPresenter()
     {
@@ -235,9 +237,8 @@ public class WaveDromPresenter : Control
     private void RenderDiagram(DrawingContext dc, WaveDromDiagram diagram)
     {
         var stroke = Foreground ?? Brushes.Black;
-        var wavePen = new Pen(stroke, 1.2);
-        var thinPen = new Pen(stroke, 0.6, new DashStyle([1, 3], 0));
-        var markerPen = new Pen(stroke, 1);
+        // Mark lines use the official muted gray (stroke:#888, dash 1,3).
+        var thinPen = new Pen(Brushes.Gray, 0.5, new DashStyle([1, 3], 0));
         var typeface = new Typeface(FontFamily);
         var hScale = diagram.HScale;
         var mmStep = 2 * hScale * WaveDromParser.Xs;
@@ -302,7 +303,7 @@ public class WaveDromPresenter : Control
 
             for (var b = 0; b < lane.Bricks.Length; b++)
             {
-                DrawBrick(dc, lane.Bricks[b], laneX + b * WaveDromParser.Xs, laneY, wavePen, markerPen);
+                DrawBrick(dc, lane.Bricks[b], laneX + b * WaveDromParser.Xs, laneY);
             }
 
             // Data labels at marker centers (official render-wave-lane.js:
@@ -392,310 +393,87 @@ public class WaveDromPresenter : Control
     private const double WaveDromYm = 15;
 
     /// <summary>
-    /// Draws one half-brick (20x20 cell) identified by a WaveDrom skin id.
-    /// Y coordinates: top = 0, bottom = 20 relative to laneY.
+    /// Draws one half-brick (20x20 cell) identified by a WaveDrom skin id,
+    /// using the official default skin path definitions (see
+    /// <see cref="WaveDromSkin"/>). Each brick's local geometry is translated
+    /// by the cell origin so the strokes match the official SVG output.
     /// </summary>
-    private void DrawBrick(DrawingContext dc, string id, double x, double y, IPen wavePen, IPen markerPen)
+    private void DrawBrick(DrawingContext dc, string id, double x, double y)
     {
-        const double w = WaveDromParser.Xs;
-        var top = y;
-        var bottom = y + WaveDromParser.Ys;
-        var mid = y + WaveDromParser.Ys / 2;
-
-        switch (id)
+        if (!WaveDromSkin.Bricks.TryGetValue(id, out var parts))
         {
-            case "pclk":
-                // Rising edge at cell start: M0,20 0,0 20,0
-                dc.DrawLine(wavePen, new Point(x, bottom), new Point(x, top));
-                dc.DrawLine(wavePen, new Point(x, top), new Point(x + w, top));
-                break;
-            case "nclk":
-                dc.DrawLine(wavePen, new Point(x, top), new Point(x, bottom));
-                dc.DrawLine(wavePen, new Point(x, bottom), new Point(x + w, bottom));
-                break;
-            case "Pclk":
-                dc.DrawLine(wavePen, new Point(x, bottom), new Point(x, top));
-                dc.DrawLine(wavePen, new Point(x, top), new Point(x + w, top));
-                DrawClockArrow(dc, x, top, up: true);
-                break;
-            case "Nclk":
-                dc.DrawLine(wavePen, new Point(x, top), new Point(x, bottom));
-                dc.DrawLine(wavePen, new Point(x, bottom), new Point(x + w, bottom));
-                DrawClockArrow(dc, x, bottom, up: false);
-                break;
-            case "000":
-                dc.DrawLine(wavePen, new Point(x, bottom), new Point(x + w, bottom));
-                break;
-            case "111":
-                dc.DrawLine(wavePen, new Point(x, top), new Point(x + w, top));
-                break;
-            case "zzz":
-                dc.DrawLine(wavePen, new Point(x, mid), new Point(x + w, mid));
-                break;
-            case "ddd":
-                dc.DrawLine(new Pen(wavePen.Brush, 1, DashStyle.Dash), new Point(x, bottom), new Point(x + w, bottom));
-                break;
-            case "uuu":
-                dc.DrawLine(new Pen(wavePen.Brush, 1, DashStyle.Dash), new Point(x, top), new Point(x + w, top));
-                break;
-            default:
-                DrawThreeCharBrick(dc, id, x, y, wavePen, markerPen);
-                break;
+            // Unknown brick id: fall back to the official "xxx" hatch brick.
+            parts = WaveDromSkin.Bricks["xxx"];
+        }
+
+        using var _ = dc.PushTransform(Matrix.CreateTranslation(x, y));
+        foreach (var part in parts)
+        {
+            var geometry = GetCachedBrickGeometry(id, part.Data);
+            var (brush, pen) = ResolveStyle(part.Class);
+            dc.DrawGeometry(brush, pen, geometry);
         }
     }
 
-    private void DrawClockArrow(DrawingContext dc, double x, double edgeY, bool up)
+    private StreamGeometry GetCachedBrickGeometry(string id, string pathData)
     {
-        // Small solid triangle at the clock edge (Pclk/Nclk arrow).
-        var direction = up ? -1 : 1;
-        var geometry = new StreamGeometry();
-        using (var ctx = geometry.Open())
+        var key = id + "|" + pathData;
+        if (_brickGeometryCache.TryGetValue(key, out var cached))
         {
-            ctx.BeginFigure(new Point(x - 3, edgeY - direction * 3), true);
-            ctx.LineTo(new Point(x + 3, edgeY - direction * 3));
-            ctx.LineTo(new Point(x, edgeY + direction * 3));
-            ctx.EndFigure(true);
+            return cached;
         }
 
-        dc.DrawGeometry(Foreground ?? Brushes.Black, null, geometry);
+        var geometry = SvgPathParser.Parse(pathData);
+        _brickGeometryCache[key] = geometry;
+        return geometry;
     }
 
-    private void DrawThreeCharBrick(DrawingContext dc, string id, double x, double y, IPen wavePen, IPen markerPen)
+    /// <summary>
+    /// Resolves an official skin style class (s1..s16) to fill/stroke brushes
+    /// and a pen. Strokes use the presenter <see cref="Foreground"/> so the
+    /// diagram honors theming, while fills follow the skin color set.
+    /// </summary>
+    private (IBrush? Fill, IPen? Pen) ResolveStyle(string styleClass)
     {
-        if (id.Length != 3 && !id.StartsWith("vm", StringComparison.Ordinal) && !id.Contains('v', StringComparison.Ordinal))
+        var stroke = Foreground ?? Brushes.Black;
+        return styleClass switch
         {
-            // Unknown brick: draw hatched unknown region.
-            DrawUnknownHatch(dc, x, y, WaveDromParser.Xs, wavePen);
-            return;
-        }
-
-        const double w = WaveDromParser.Xs;
-        var top = y;
-        var bottom = y + WaveDromParser.Ys;
-        var mid = y + WaveDromParser.Ys / 2;
-
-        // Box bricks (vvv-N, XMv-N, vmX-N, vMX-N-M).
-        if (id.StartsWith("vvv-", StringComparison.Ordinal) ||
-            id.StartsWith("vm", StringComparison.Ordinal) ||
-            (id.Length >= 3 && id[1] == 'v'))
-        {
-            DrawBoxBrick(dc, id, x, y, wavePen);
-            return;
-        }
-
-        if (id.Length != 3)
-        {
-            DrawUnknownHatch(dc, x, y, w, wavePen);
-            return;
-        }
-
-        var startLevel = id[0];
-        var transition = id[1];
-        var endLevel = id[2];
-
-        var startY = LevelY(startLevel, top, mid, bottom);
-        var endY = LevelY(endLevel, top, mid, bottom);
-
-        if (transition == 'm')
-        {
-            // Mid-cell transition: level line to 3, transition 3..9, level line 9..20.
-            // Same-level bricks (0m0, 1m1) draw a dip/bump in the middle.
-            if (startLevel == endLevel && startY == endY)
-            {
-                DrawSameLevelMid(dc, startLevel, x, y, wavePen);
-                return;
-            }
-
-            // Segment before transition.
-            DrawLevelSegment(dc, startLevel, x, x + 3, top, mid, bottom, wavePen);
-            // Transition 3..9.
-            if (startY == mid || endY == mid)
-            {
-                dc.DrawLine(wavePen, new Point(x + 3, startY), new Point(x + 9, endY));
-            }
-            else if (startLevel == 'x' || endLevel == 'x' || startLevel == 'd' || endLevel == 'd' || startLevel == 'u' || endLevel == 'u')
-            {
-                // Unknown/dashed transitions: diagonal + hatch remnants.
-                dc.DrawLine(wavePen, new Point(x + 3, startY), new Point(x + 9, endY));
-                if (startLevel == 'x')
-                {
-                    DrawHatchLines(dc, x, x + 3, startY == bottom ? bottom : top, startY == bottom ? top : bottom, wavePen);
-                }
-
-                if (endLevel == 'x')
-                {
-                    DrawHatchLines(dc, x + 9, x + w, endY == bottom ? bottom : top, endY == bottom ? top : bottom, wavePen);
-                }
-            }
-            else
-            {
-                // Sharp diagonal.
-                dc.DrawLine(wavePen, new Point(x + 3, startY), new Point(x + 9, endY));
-            }
-
-            // Segment after transition.
-            DrawLevelSegment(dc, endLevel, x + 9, x + w, top, mid, bottom, wavePen);
-            // Vertical transition edge at cell start if levels differ from previous handled by bricks.
-            return;
-        }
-
-        // Unknown transition characters.
-        DrawUnknownHatch(dc, x, y, w, wavePen);
-    }
-
-    private void DrawSameLevelMid(DrawingContext dc, char level, double x, double y, IPen wavePen)
-    {
-        var lineY = level == 'z' ? y + WaveDromParser.Ys / 2 : level == '0' ? y + WaveDromParser.Ys : y;
-        var dipY = level == '1' ? y + 10 : level == '0' ? y + 10 : lineY;
-
-        if (level == '0')
-        {
-            // 0m0: dip up in the middle (m0,20 3,0 3,-10 3,10 11,0).
-            dc.DrawLine(wavePen, new Point(x, lineY), new Point(x + 3, lineY));
-            dc.DrawLine(wavePen, new Point(x + 3, lineY), new Point(x + 6, lineY - 10));
-            dc.DrawLine(wavePen, new Point(x + 6, lineY - 10), new Point(x + 9, lineY));
-            dc.DrawLine(wavePen, new Point(x + 9, lineY), new Point(x + WaveDromParser.Xs, lineY));
-        }
-        else if (level == '1')
-        {
-            // 1m1: bump down in the middle.
-            dc.DrawLine(wavePen, new Point(x, lineY), new Point(x + 3, lineY));
-            dc.DrawLine(wavePen, new Point(x + 3, lineY), new Point(x + 6, lineY + 10));
-            dc.DrawLine(wavePen, new Point(x + 6, lineY + 10), new Point(x + 9, lineY));
-            dc.DrawLine(wavePen, new Point(x + 9, lineY), new Point(x + WaveDromParser.Xs, lineY));
-        }
-        else
-        {
-            dc.DrawLine(wavePen, new Point(x, lineY), new Point(x + WaveDromParser.Xs, lineY));
-        }
-    }
-
-    private void DrawBoxBrick(DrawingContext dc, string id, double x, double y, IPen wavePen)
-    {
-        const double w = WaveDromParser.Xs;
-        var top = y;
-        var bottom = y + WaveDromParser.Ys;
-
-        // Determine fill color from suffix (-2 = white, -3..-9 = tinted).
-        IBrush fill = Brushes.White;
-        var colorIndex = 2;
-        var dashIndex = id.LastIndexOf('-');
-        if (dashIndex >= 0 && int.TryParse(id[(dashIndex + 1)..], out colorIndex))
-        {
-            IBrush tint = colorIndex switch
-            {
-                3 => new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xB4)),
-                4 => new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0xB9)),
-                5 => new SolidColorBrush(Color.FromRgb(0xB9, 0xE0, 0xFF)),
-                6 => new SolidColorBrush(Color.FromRgb(0xCC, 0xFD, 0xFE)),
-                7 => new SolidColorBrush(Color.FromRgb(0xCD, 0xFD, 0xC5)),
-                8 => new SolidColorBrush(Color.FromRgb(0xF0, 0xC1, 0xFB)),
-                9 => new SolidColorBrush(Color.FromRgb(0xF5, 0xC2, 0xC0)),
-                _ => Brushes.White
-            };
-            fill = tint;
-        }
-
-        if (MarkerBrush is { } customFill && colorIndex <= 2)
-        {
-            fill = customFill;
-        }
-
-        if (id.StartsWith("vvv-", StringComparison.Ordinal))
-        {
-            // Full box cell.
-            dc.DrawRectangle(fill, wavePen, new Rect(x, top, w, bottom - top));
-            return;
-        }
-
-        if (id.StartsWith("vm", StringComparison.Ordinal))
-        {
-            // Box from 0..3 then transition out (vm0-2, vm1-2 ...).
-            var endLevel = id.Length > 2 ? id[2] : '0';
-            dc.DrawRectangle(fill, wavePen, new Rect(x, top, 3, bottom - top));
-            var startY = top;
-            var endY = LevelY(endLevel, top, y + WaveDromParser.Ys / 2, bottom);
-            dc.DrawLine(wavePen, new Point(x + 3, startY), new Point(x + 9, endY));
-            DrawLevelSegment(dc, endLevel, x + 9, x + w, top, y + WaveDromParser.Ys / 2, bottom, wavePen);
-            return;
-        }
-
-        // XMv-N: transition in then box 9..20.
-        if (id.Length >= 4 && id[1] == 'm' && id[2] == 'v')
-        {
-            var startLevel = id[0];
-            var startY = LevelY(startLevel, top, y + WaveDromParser.Ys / 2, bottom);
-            dc.DrawLine(wavePen, new Point(x, startY), new Point(x + 3, startY));
-            dc.DrawLine(wavePen, new Point(x + 3, startY), new Point(x + 9, top));
-            dc.DrawRectangle(fill, wavePen, new Rect(x + 9, top, w - 9, bottom - top));
-            return;
-        }
-
-        DrawUnknownHatch(dc, x, y, w, wavePen);
-    }
-
-    private static double LevelY(char level, double top, double mid, double bottom)
-    {
-        return level switch
-        {
-            '0' => bottom,
-            '1' => top,
-            'x' => bottom,
-            'd' => bottom,
-            'u' => top,
-            'z' => mid,
-            'v' => mid,
-            _ => bottom
+            // s1: solid 1px stroke.
+            "s1" => (null, CachedPen(stroke, 1, null)),
+            // s2: thin 0.5px hatch stroke.
+            "s2" => (null, CachedPen(stroke, 0.5, null)),
+            // s3: dashed 1px stroke (dash 1,3).
+            "s3" => (null, CachedPen(stroke, 1, new DashStyle([1, 3], 0))),
+            // s4: solid 1px stroke.
+            "s4" => (null, CachedPen(stroke, 1, null)),
+            // s5: white fill (gap body).
+            "s5" => (Brushes.White, null),
+            // s6: black fill (clock edge arrow).
+            "s6" => (stroke, null),
+            // s7..s14: data box fills (index 2..9).
+            "s7" => (Brushes.White, null),
+            "s8" => (new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xB4)), null),
+            "s9" => (new SolidColorBrush(Color.FromRgb(0xFF, 0xE0, 0xB9)), null),
+            "s10" => (new SolidColorBrush(Color.FromRgb(0xB9, 0xE0, 0xFF)), null),
+            "s11" => (new SolidColorBrush(Color.FromRgb(0xCC, 0xFD, 0xFE)), null),
+            "s12" => (new SolidColorBrush(Color.FromRgb(0xCD, 0xFD, 0xC5)), null),
+            "s13" => (new SolidColorBrush(Color.FromRgb(0xF0, 0xC1, 0xFB)), null),
+            "s14" => (new SolidColorBrush(Color.FromRgb(0xF5, 0xC2, 0xC0)), null),
+            _ => (null, null)
         };
     }
 
-    private void DrawLevelSegment(DrawingContext dc, char level, double x0, double x1, double top, double mid, double bottom, IPen wavePen)
+    private IPen CachedPen(IBrush brush, double thickness, IDashStyle? dash)
     {
-        if (x1 <= x0)
+        var key = $"{brush}_{thickness}_{(dash is null ? "solid" : "dash")}";
+        if (_brickPenCache.TryGetValue(key, out var pen))
         {
-            return;
+            return pen;
         }
 
-        switch (level)
-        {
-            case '0':
-                dc.DrawLine(wavePen, new Point(x0, bottom), new Point(x1, bottom));
-                break;
-            case '1':
-                dc.DrawLine(wavePen, new Point(x0, top), new Point(x1, top));
-                break;
-            case 'z':
-                dc.DrawLine(wavePen, new Point(x0, mid), new Point(x1, mid));
-                break;
-            case 'd':
-                dc.DrawLine(new Pen(wavePen.Brush, 1, DashStyle.Dash), new Point(x0, bottom), new Point(x1, bottom));
-                break;
-            case 'u':
-                dc.DrawLine(new Pen(wavePen.Brush, 1, DashStyle.Dash), new Point(x0, top), new Point(x1, top));
-                break;
-            case 'x':
-                dc.DrawLine(wavePen, new Point(x0, bottom), new Point(x1, bottom));
-                DrawHatchLines(dc, x0, x1, bottom, top, wavePen);
-                break;
-        }
-    }
-
-    private void DrawUnknownHatch(DrawingContext dc, double x, double y, double width, IPen wavePen)
-    {
-        var top = y;
-        var bottom = y + WaveDromParser.Ys;
-        dc.DrawLine(wavePen, new Point(x, bottom), new Point(x + width, bottom));
-        dc.DrawLine(wavePen, new Point(x, top), new Point(x + width, top));
-        DrawHatchLines(dc, x, x + width, bottom, top, wavePen);
-    }
-
-    private void DrawHatchLines(DrawingContext dc, double x0, double x1, double fromY, double toY, IPen pen)
-    {
-        var span = x1 - x0;
-        for (var i = 0; i <= span; i += 5)
-        {
-            dc.DrawLine(pen, new Point(x0 + i, fromY), new Point(Math.Min(x0 + i + 10, x1), toY));
-        }
+        pen = new Pen(brush, thickness, dash);
+        _brickPenCache[key] = pen;
+        return pen;
     }
 
     private void DrawRotatedText(DrawingContext dc, string text, Typeface typeface, IBrush brush, double centerX, double centerY)

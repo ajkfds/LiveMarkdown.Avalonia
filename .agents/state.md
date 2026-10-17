@@ -8,6 +8,14 @@
 
 ## 完了済みタスク
 
+- WaveDrom の data 列（バス波形）線画を公式スキン定義で描画
+    - `WaveDromSkin.cs` を追加し、公式 `skins/default.js` の全ブリック（pclk/nclk、0m0/1m1、
+      x系、d/u/z系、vvv-N、Nmv-N、vmv-A-B、gap 等）の SVG パス定義を移植。
+    - `SvgPathParser.cs` を追加し、SVG パス（M/L/H/V/C/Z の絶対・相対）を Avalonia
+      `StreamGeometry` に変換。
+    - `WaveDromPresenter.DrawBrick` をスキンのパスをそのまま描画する実装に置き換え、
+      手書き近似（x の斜線・345 の枠形状のズレ）を解消。スタイル s1〜s16 を配色/ペンに解決。
+    - 波形線の色を Foreground 連動に、マーク線を公式の灰色破線（#888, dash 1,3）に修正。
 - WaveDrom の data ラベル（バス値）描画の修正
     - `FindLaneMarkers` を `int[]` → `double[]` に変更し、公式 `find-lane-markers.js` の
       `gcount - (lcount + 1) / 2` の半ブリック小数値を切り捨てずに保持。
