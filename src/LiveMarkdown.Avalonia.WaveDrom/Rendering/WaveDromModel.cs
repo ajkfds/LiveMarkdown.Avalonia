@@ -35,6 +35,13 @@ public sealed class WaveDromLane
     public int GroupLevel { get; init; }
     public int GroupStartRow { get; init; }
     public int GroupHeight { get; init; }
+
+    /// <summary>
+    /// Accumulated rec.js group x offset for this lane (0 for top-level
+    /// signals, 25 for the first nesting level, etc.). Used to size the
+    /// left gutter so group brackets clear the signal names.
+    /// </summary>
+    public int XOffset { get; init; }
 }
 
 public sealed class WaveDromGroup
@@ -94,7 +101,7 @@ public static class WaveDromParser
 
         if (root.TryGetProperty("signal", out var signal) && signal.ValueKind == JsonValueKind.Array)
         {
-            ParseSignal(signal, 0, 0, lanes, groups, hScale);
+            ParseSignal(signal, lanes, groups, hScale);
         }
 
         string? headText = null, footText = null;
@@ -299,117 +306,159 @@ public static class WaveDromParser
         return result;
     }
 
-    private static void ParseSignal(
-        JsonElement signal,
-        int level,
-        int row,
-        List<WaveDromLane> lanes,
-        List<WaveDromGroup> groups,
-        int hScale)
+    /// <summary>
+    /// Mutable layout cursor mirroring the official rec.js <c>state</c> object.
+    /// <see cref="X"/> is the running x offset built up from per-group deltas
+    /// (25 for named groups, 10 otherwise); <see cref="Xx"/> is the value a
+    /// completed (sub)group reports as its bracket x.
+    /// </summary>
+    private sealed class RecState
     {
-        ParseSignalMembers(signal.EnumerateArray(), level, row, lanes, groups, hScale);
+        public int X;
+        public int Xx;
+        public int Y;
+        public int Depth;
+        public string? Name;
     }
 
-    private static void ParseSignalMembers(
-        IEnumerable<JsonElement> entries,
-        int level,
-        int row,
+    private static void ParseSignal(
+        JsonElement signal,
         List<WaveDromLane> lanes,
         List<WaveDromGroup> groups,
         int hScale)
     {
-        foreach (var entry in entries)
+        var state = new RecState();
+        Rec(signal.EnumerateArray().ToArray(), null, false, state, lanes, groups, hScale);
+    }
+
+    /// <summary>
+    /// Port of the official rec.js. Walks a signal array, emitting lanes and
+    /// groups. The group x coordinate is accumulated from <c>deltaX</c>
+    /// (25 when the array/group has a leading name, else 10), so nested groups
+    /// step 25px apart exactly like the reference renderer.
+    /// </summary>
+    private static void Rec(
+        IReadOnlyList<JsonElement> items,
+        string? explicitName,
+        bool hasExplicitName,
+        RecState state,
+        List<WaveDromLane> lanes,
+        List<WaveDromGroup> groups,
+        int hScale)
+    {
+        var deltaX = 10;
+        string? name = null;
+        var startIndex = 0;
+
+        if (hasExplicitName)
         {
-            if (entry.ValueKind == JsonValueKind.Object &&
-                entry.TryGetProperty("signal", out var nested) &&
+            name = explicitName;
+            deltaX = 25;
+        }
+        else if (items.Count > 0 &&
+                 items[0].ValueKind is JsonValueKind.String or JsonValueKind.Number)
+        {
+            name = items[0].ValueKind == JsonValueKind.String
+                ? items[0].GetString()
+                : items[0].ToString();
+            deltaX = 25;
+            startIndex = 1;
+        }
+
+        state.X += deltaX;
+        state.Depth++;
+
+        for (var i = startIndex; i < items.Count; i++)
+        {
+            var item = items[i];
+
+            // Nested group: array form ['Name', ...] or object form
+            // { name, signal: [...] } (the object form is a convenience
+            // extension; the official grammar uses the array form).
+            if (item.ValueKind == JsonValueKind.Array)
+            {
+                var oldY = state.Y;
+                Rec(item.EnumerateArray().ToArray(), null, false, state, lanes, groups, hScale);
+                groups.Add(new WaveDromGroup
+                {
+                    Name = state.Name,
+                    X = state.Xx,
+                    Y = oldY,
+                    Height = state.Y - oldY
+                });
+                continue;
+            }
+
+            if (item.ValueKind == JsonValueKind.Object &&
+                item.TryGetProperty("signal", out var nested) &&
                 nested.ValueKind == JsonValueKind.Array)
             {
-                var name = entry.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
+                var oldY = state.Y;
+                var groupName = item.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String
                     ? n.GetString()
                     : null;
-
-                var startRow = lanes.Count;
-                ParseSignal(nested, level + 1, row, lanes, groups, hScale);
-
+                Rec(nested.EnumerateArray().ToArray(), groupName, true, state, lanes, groups, hScale);
                 groups.Add(new WaveDromGroup
                 {
-                    Name = name,
-                    X = level * 5,
-                    Y = startRow,
-                    Height = lanes.Count - startRow
+                    Name = state.Name,
+                    X = state.Xx,
+                    Y = oldY,
+                    Height = state.Y - oldY
                 });
                 continue;
             }
 
-            // Array group form (official rec.js): ['Name', {...lane}, [...subgroup]].
-            // The first element is the group name; the remaining elements are
-            // signals or nested groups.
-            if (entry.ValueKind == JsonValueKind.Array)
-            {
-                string? groupName = null;
-                var startIndex = 0;
-                var first = entry.EnumerateArray().FirstOrDefault();
-                if (first.ValueKind is JsonValueKind.String or JsonValueKind.Number)
-                {
-                    groupName = first.ValueKind == JsonValueKind.String
-                        ? first.GetString()
-                        : first.ToString();
-                    startIndex = 1;
-                }
-
-                var members = entry.EnumerateArray().Skip(startIndex).ToArray();
-                var startRow = lanes.Count;
-                ParseSignalMembers(members, level + 1, row, lanes, groups, hScale);
-
-                groups.Add(new WaveDromGroup
-                {
-                    Name = groupName,
-                    X = level * 5,
-                    Y = startRow,
-                    Height = lanes.Count - startRow
-                });
-                continue;
-            }
-
-            if (entry.ValueKind != JsonValueKind.Object)
+            if (item.ValueKind != JsonValueKind.Object)
             {
                 continue;
             }
 
-            var period = entry.TryGetProperty("period", out var periodElement) &&
-                         periodElement.ValueKind == JsonValueKind.Number
-                ? Math.Max(1, periodElement.GetDouble())
-                : 1;
-            var phase = entry.TryGetProperty("phase", out var phaseElement) &&
-                        phaseElement.ValueKind == JsonValueKind.Number
-                ? phaseElement.GetDouble()
-                : 0;
-
-            var wave = entry.TryGetProperty("wave", out var waveElement) &&
-                       waveElement.ValueKind == JsonValueKind.String
-                ? waveElement.GetString() ?? string.Empty
-                : string.Empty;
-
-            var data = entry.TryGetProperty("data", out var dataElement)
-                ? ParseData(dataElement)
-                : [];
-
-            var (bricks, unseenMarkers) = ParseWaveLane(wave, (int)(period * hScale - 1), (int)(phase * 2));
-            var labels = data.Skip(unseenMarkers).ToArray();
-
-            lanes.Add(new WaveDromLane
-            {
-                Name = entry.TryGetProperty("name", out var nameElement) &&
-                       nameElement.ValueKind == JsonValueKind.String
-                    ? nameElement.GetString() ?? string.Empty
-                    : string.Empty,
-                Period = (int)period,
-                Phase = phase,
-                Bricks = bricks,
-                Labels = [.. labels],
-                GroupLevel = level
-            });
+            lanes.Add(ParseLane(item, state.Depth, state.X, hScale));
+            state.Y += 1;
         }
+
+        state.Xx = state.X;
+        state.X -= deltaX;
+        state.Depth--;
+        state.Name = name;
+    }
+
+    private static WaveDromLane ParseLane(JsonElement entry, int level, int xOffset, int hScale)
+    {
+        var period = entry.TryGetProperty("period", out var periodElement) &&
+                     periodElement.ValueKind == JsonValueKind.Number
+            ? Math.Max(1, periodElement.GetDouble())
+            : 1;
+        var phase = entry.TryGetProperty("phase", out var phaseElement) &&
+                    phaseElement.ValueKind == JsonValueKind.Number
+            ? phaseElement.GetDouble()
+            : 0;
+
+        var wave = entry.TryGetProperty("wave", out var waveElement) &&
+                   waveElement.ValueKind == JsonValueKind.String
+            ? waveElement.GetString() ?? string.Empty
+            : string.Empty;
+
+        var data = entry.TryGetProperty("data", out var dataElement)
+            ? ParseData(dataElement)
+            : [];
+
+        var (bricks, unseenMarkers) = ParseWaveLane(wave, (int)(period * hScale - 1), (int)(phase * 2));
+        var labels = data.Skip(unseenMarkers).ToArray();
+
+        return new WaveDromLane
+        {
+            Name = entry.TryGetProperty("name", out var nameElement) &&
+                   nameElement.ValueKind == JsonValueKind.String
+                ? nameElement.GetString() ?? string.Empty
+                : string.Empty,
+            Period = (int)period,
+            Phase = phase,
+            Bricks = bricks,
+            Labels = [.. labels],
+            GroupLevel = level,
+            XOffset = xOffset
+        };
     }
 
     private static string[] ParseData(JsonElement element)

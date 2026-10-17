@@ -1,35 +1,69 @@
-# WaveDrom Timing Diagrams
+﻿# Hitchhiker's Guide to the WaveDrom
 
-## Clock and simple signals
+## Step 1. The Signal
+
+```wavedrom
+{ signal: [{ name: "Alfa", wave: "01.zx=ud.23.456789" }] }
+```
+
+## Step 2. Adding Clock
 
 ```wavedrom
 { signal: [
-  { name: "clk",  wave: "p..........." },
-  { name: "req",  wave: "01.......0..." },
-  { name: "ack",  wave: "1.....01....." },
-  { name: "data", wave: "x.345x=68x...", data: ["A1", "A2", "A3", "A4", "B1", "B2"] },
-  { name: "busy", wave: "0.1...01....." }
+  { name: "pclk", wave: 'p.......' },
+  { name: "Pclk", wave: 'P.......' },
+  { name: "nclk", wave: 'n.......' },
+  { name: "Nclk", wave: 'N.......' },
+  {},
+  { name: 'clk0', wave: 'phnlPHNL' },
+  { name: 'clk1', wave: 'xhlhLHl.' },
+  { name: 'clk2', wave: 'hpHplnLn' },
+  { name: 'clk3', wave: 'nhNhplPl' },
+  { name: 'clk4', wave: 'xlh.L.Hx' },
 ]}
 ```
 
-## Grouped signals
+## Step 3. Putting all together
 
 ```wavedrom
 { signal: [
-  { name: "bus", signal: [
-    { name: "addr", wave: "23.....", data: ["0x1000", "0x1004"] },
-    { name: "data", wave: "x=....", data: ["DEAD", "BEEF"] }
-  ]},
-  { name: "valid", wave: "01...." },
-  { name: "ready", wave: "0..1.." }
+  { name: "clk",  wave: "P......" },
+  { name: "bus",  wave: "x.==.=x", data: ["head", "body", "tail", "data"] },
+  { name: "wire", wave: "0.1..0." }
 ]}
 ```
 
-## Gaps and unknown states
+## Step 4. Spacers and Gaps
 
 ```wavedrom
 { signal: [
-  { name: "A", wave: "01|x.u" },
-  { name: "B", wave: "0.=..=", data: ["X", "Y"] }
-], foot: { text: "WaveDrom sample" } }
+  { name: "clk",         wave: "p.....|..." },
+  { name: "Data",        wave: "x.345x|=.x", data: ["head", "body", "tail", "data"] },
+  { name: "Request",     wave: "0.1..0|1.0" },
+  {},
+  { name: "Acknowledge", wave: "1.....|01." }
+]}
+```
+
+## Step 5. The groups
+
+```wavedrom
+{ signal: [
+  {    name: 'clk',   wave: 'p..Pp..P'},
+  ['Master',
+    ['ctrl',
+      {name: 'write', wave: '01.0....'},
+      {name: 'read',  wave: '0...1..0'}
+    ],
+    {  name: 'addr',  wave: 'x3.x4..x', data: 'A1 A2'},
+    {  name: 'wdata', wave: 'x3.x....', data: 'D1'   },
+  ],
+  {},
+  ['Slave',
+    ['ctrl',
+      {name: 'ack',   wave: 'x01x0.1x'},
+    ],
+    {  name: 'rdata', wave: 'x.....4x', data: 'Q2'},
+  ]
+]}
 ```

@@ -229,9 +229,27 @@ public class WaveDromPresenterTests
         Assert.That(diagram.Lanes.Select(l => l.Name),
             Does.Contain("write").And.Contain("read").And.Contain("addr")
                 .And.Contain("wdata").And.Contain("ack").And.Contain("rdata"));
-        Assert.That(diagram.Groups.Any(g => g.Name == "Master"), Is.True);
-        Assert.That(diagram.Groups.Any(g => g.Name == "Slave"), Is.True);
-        Assert.That(diagram.Groups.Any(g => g.Name == "ctrl"), Is.True);
+
+        // Official rec.js group x: top-level deltaX=10, named groups +25 each,
+        // so Master/Slave sit at x=35 and the nested ctrl groups at x=60.
+        var master = diagram.Groups.Single(g => g.Name == "Master");
+        var slave = diagram.Groups.Single(g => g.Name == "Slave");
+        var ctrlGroups = diagram.Groups.Where(g => g.Name == "ctrl").ToArray();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(master.X, Is.EqualTo(35));
+            Assert.That(slave.X, Is.EqualTo(35));
+            Assert.That(ctrlGroups, Has.Length.EqualTo(2));
+            Assert.That(ctrlGroups.All(g => g.X == 60), Is.True);
+
+            // Lane x offsets drive the left gutter; a lane inside the nested
+            // ctrl group carries the full 60px offset.
+            var write = diagram.Lanes.Single(l => l.Name == "write");
+            Assert.That(write.XOffset, Is.EqualTo(60));
+            var clk = diagram.Lanes.Single(l => l.Name == "clk");
+            Assert.That(clk.XOffset, Is.EqualTo(10));
+        });
     }
 
     [Test]

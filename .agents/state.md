@@ -8,6 +8,13 @@
 
 ## 完了済みタスク
 
+- WaveDrom のグループ表示位置を修正
+    - パーサを公式 `rec.js` に忠実に移植し、グループの X 座標を固定の `level * 5` ではなく
+      deltaX の累積方式（named=25px, unnamed=10px）で算出。
+    - 波形左余白 `xg` を「レーン名の最大幅 + グループオフセット」から動的に算出し、
+      グループブラケットが信号名の左に正しく並ぶようにした。
+    - グループブラケットの縦線長を公式どおり `Height*Yo - 16` に修正。
+    - `WaveDromLane.XOffset` を追加。
 - WaveDrom の Step2 / Step5 サンプルのパースエラー修正
     - 末尾カンマ（trailing comma）を許容するよう `JsonDocumentOptions.AllowTrailingCommas`
       を有効化（Step2 の `clk4` 波形配列など）。

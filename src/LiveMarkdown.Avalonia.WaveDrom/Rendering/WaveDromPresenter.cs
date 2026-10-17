@@ -181,7 +181,7 @@ public class WaveDromPresenter : Control
         try
         {
             _diagram = WaveDromParser.Parse(text);
-            _size = MeasureDiagram(_diagram);
+            _size = MeasureDiagram(_diagram, new Typeface(FontFamily));
         }
         catch (Exception ex)
         {
@@ -190,10 +190,11 @@ public class WaveDromPresenter : Control
         }
     }
 
-    private static Size MeasureDiagram(WaveDromDiagram diagram)
+    private Size MeasureDiagram(WaveDromDiagram diagram, Typeface typeface)
     {
+        var xg = ComputeLeftGutter(diagram, typeface, FontSize);
         var waveWidth = diagram.XMax * WaveDromParser.Xs;
-        var width = WaveDromXg + waveWidth + 10;
+        var width = xg + waveWidth + 10;
         var height = WaveDromParser.Y0 +
             diagram.Lanes.Length * WaveDromParser.Yo + 30;
         if (diagram.HeadText is not null || diagram.HeadTick.Length > 0)
@@ -207,6 +208,43 @@ public class WaveDromPresenter : Control
         }
 
         return new Size(Math.Max(width, 100), Math.Max(height, 40));
+    }
+
+    /// <summary>
+    /// Computes the wave-area left origin (official renderSignal xg). The gutter
+    /// must fit the widest signal name plus its rec.js group offset, so group
+    /// brackets (absolute rec coordinates) sit just left of the names.
+    /// </summary>
+    private static double ComputeLeftGutter(WaveDromDiagram diagram, Typeface typeface, double fontSize)
+    {
+        // tgo = -10 in official lane.js (name anchor x relative to the wave origin).
+        const double tgo = -10;
+        var maxContent = 0d;
+        foreach (var lane in diagram.Lanes)
+        {
+            var nameWidth = MeasureTextWidth(lane.Name, typeface, fontSize);
+            maxContent = Math.Max(maxContent, nameWidth + lane.XOffset);
+        }
+
+        var xg = Math.Ceiling((maxContent - tgo) / WaveDromParser.Xs) * WaveDromParser.Xs;
+        return Math.Max(xg, WaveDromParser.Xs);
+    }
+
+    private static double MeasureTextWidth(string text, Typeface typeface, double fontSize)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return 0;
+        }
+
+        var formatted = new FormattedText(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            Brushes.Black);
+        return formatted.Width;
     }
 
     private static Size MeasureError(Exception error)
@@ -242,13 +280,16 @@ public class WaveDromPresenter : Control
         var typeface = new Typeface(FontFamily);
         var hScale = diagram.HScale;
         var mmStep = 2 * hScale * WaveDromParser.Xs;
+        // Official renderSignal xg: wave origin, sized so signal names and their
+        // rec.js group offsets fit in the left gutter.
+        var xg = ComputeLeftGutter(diagram, typeface, FontSize);
 
         var y = 4d;
 
         // Head text.
         if (diagram.HeadText is { } headText)
         {
-            DrawCenteredText(dc, headText, typeface, stroke, WaveDromXg / 2, y, WaveDromXg, 20);
+            DrawCenteredText(dc, headText, typeface, stroke, xg / 2, y, xg, 20);
             y += 20;
         }
 
@@ -259,7 +300,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.HeadTick[i] is { } tick)
                 {
-                    DrawCenteredText(dc, tick, typeface, stroke, WaveDromXg + i * mmStep - mmStep / 2, y, mmStep, 14);
+                    DrawCenteredText(dc, tick, typeface, stroke, xg + i * mmStep - mmStep / 2, y, mmStep, 14);
                 }
             }
 
@@ -267,7 +308,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.HeadTock[i] is { } tock)
                 {
-                    DrawCenteredText(dc, tock, typeface, stroke, WaveDromXg + i * mmStep, y, mmStep, 14);
+                    DrawCenteredText(dc, tock, typeface, stroke, xg + i * mmStep, y, mmStep, 14);
                 }
             }
 
@@ -282,7 +323,7 @@ public class WaveDromPresenter : Control
             var markCount = diagram.XMax / (2 * hScale) + 1;
             for (var i = 0; i < markCount; i++)
             {
-                var x = WaveDromXg + i * mmStep;
+                var x = xg + i * mmStep;
                 dc.DrawLine(thinPen, new Point(x, lanesTop), new Point(x, lanesTop + diagram.Lanes.Length * WaveDromParser.Yo));
             }
         }
@@ -295,11 +336,11 @@ public class WaveDromPresenter : Control
 
             if (lane.Name.Length > 0)
             {
-                DrawRightAlignedText(dc, lane.Name, typeface, stroke, WaveDromXg - 10, laneY + 8);
+                DrawRightAlignedText(dc, lane.Name, typeface, stroke, xg - 10, laneY + 8);
             }
 
             var phaseOffset = lane.Phase != 0 ? (Math.Ceiling(2 * -lane.Phase) - 0) : 0;
-            var laneX = WaveDromXg + lane.Phase * WaveDromParser.Xs;
+            var laneX = xg + lane.Phase * WaveDromParser.Xs;
 
             for (var b = 0; b < lane.Bricks.Length; b++)
             {
@@ -319,30 +360,33 @@ public class WaveDromPresenter : Control
             }
         }
 
-        // Group brackets.
+        // Group brackets (official render-groups.js):
+        //   path: m (x+0.5),(y*yo+3.5) c -3,0 -5,2 -5,5 l 0,(height*yo-16) c 0,3 2,5 5,5
+        // The bracket x is the accumulated rec.js offset (25/35/...), so it sits
+        // just left of the signal names.
+        var groupPen = new Pen(stroke, 1);
         foreach (var group in diagram.Groups)
         {
             var gx = group.X + 0.5;
             var gy = lanesTop + group.Y * WaveDromParser.Yo + 3.5;
-            var gh = group.Height * WaveDromParser.Yo - 8;
+            var runLength = group.Height * WaveDromParser.Yo - 16;
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
-                var start = new Point(gx, gy);
-                ctx.BeginFigure(start, false);
-                var c1 = new Point(gx - 3, gy);
-                var c2 = new Point(gx - 5, gy + 2);
-                var p1 = new Point(gx - 5, gy + 5);
-                ctx.CubicBezierTo(c1, c2, p1);
-                ctx.LineTo(new Point(gx - 5, gy + 5 + gh));
-                var c3 = new Point(gx - 5, gy + 5 + gh + 3);
-                var c4 = new Point(gx - 3, gy + 5 + gh + 5);
-                var p2 = new Point(gx, gy + 5 + gh + 5);
-                ctx.CubicBezierTo(c3, c4, p2);
+                ctx.BeginFigure(new Point(gx, gy), false);
+                // Top curl: 3,-0 5,2 5,5.
+                ctx.CubicBezierTo(new Point(gx - 3, gy), new Point(gx - 5, gy + 2), new Point(gx - 5, gy + 5));
+                // Vertical run.
+                ctx.LineTo(new Point(gx - 5, gy + 5 + runLength));
+                // Bottom curl: 0,3 2,5 5,5.
+                ctx.CubicBezierTo(
+                    new Point(gx - 5, gy + 5 + runLength + 3),
+                    new Point(gx - 3, gy + 5 + runLength + 5),
+                    new Point(gx, gy + 5 + runLength + 5));
                 ctx.EndFigure(false);
             }
 
-            dc.DrawGeometry(null, new Pen(stroke, 1), geometry);
+            dc.DrawGeometry(null, groupPen, geometry);
 
             if (group.Name is { } groupName)
             {
@@ -363,7 +407,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTick[i] is { } tick)
                 {
-                    DrawCenteredText(dc, tick, typeface, stroke, WaveDromXg + i * mmStep - mmStep / 2, y, mmStep, 14);
+                    DrawCenteredText(dc, tick, typeface, stroke, xg + i * mmStep - mmStep / 2, y, mmStep, 14);
                 }
             }
 
@@ -371,7 +415,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTock[i] is { } tock)
                 {
-                    DrawCenteredText(dc, tock, typeface, stroke, WaveDromXg + i * mmStep, y, mmStep, 14);
+                    DrawCenteredText(dc, tock, typeface, stroke, xg + i * mmStep, y, mmStep, 14);
                 }
             }
 
@@ -381,11 +425,9 @@ public class WaveDromPresenter : Control
         // Foot text.
         if (diagram.FootText is { } footText)
         {
-            DrawCenteredText(dc, footText, typeface, stroke, WaveDromXg / 2, y + 2, WaveDromXg, 20);
+            DrawCenteredText(dc, footText, typeface, stroke, xg / 2, y + 2, xg, 20);
         }
     }
-
-    private const double WaveDromXg = 120;
 
     // Official lane.js defaults: xlabel = 6 (data label x offset from the marker),
     // ym = 15 (data label baseline y within the lane).
