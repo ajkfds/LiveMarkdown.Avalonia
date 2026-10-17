@@ -142,9 +142,9 @@ public static class WaveDromParser
 
             if (inString)
             {
-                builder.Append(c);
                 if (c == '\\' && i + 1 < source.Length)
                 {
+                    builder.Append(c);
                     builder.Append(source[i + 1]);
                     i += 2;
                     continue;
@@ -153,8 +153,12 @@ public static class WaveDromParser
                 if (c == quoteChar)
                 {
                     inString = false;
+                    builder.Append('"');
+                    i++;
+                    continue;
                 }
 
+                builder.Append(c);
                 i++;
                 continue;
             }

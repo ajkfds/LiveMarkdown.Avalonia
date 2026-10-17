@@ -942,6 +942,10 @@ public class MermaidPresenter : Control
 
             var size = default(Size);
             var options = RenderOptions;
+            if (options?.Strict is { } strict)
+            {
+                StrictStylingValidator.Validate(input.Lines, strict, []);
+            }
 
             var diagramType = DiagramDetector.Detect(input.CleanedText.AsSpan());
             object diagram = diagramType switch
