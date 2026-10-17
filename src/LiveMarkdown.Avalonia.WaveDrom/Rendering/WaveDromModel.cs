@@ -55,7 +55,14 @@ public static class WaveDromParser
 
     public static WaveDromDiagram Parse(string source)
     {
-        using var document = JsonDocument.Parse(NormalizeSource(source));
+        // WaveDrom's relaxed grammar (JavaScript object literals) also allows
+        // trailing commas, which strict JSON rejects.
+        var options = new JsonDocumentOptions
+        {
+            AllowTrailingCommas = true,
+            CommentHandling = JsonCommentHandling.Skip,
+        };
+        using var document = JsonDocument.Parse(NormalizeSource(source), options);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
         {
@@ -300,7 +307,18 @@ public static class WaveDromParser
         List<WaveDromGroup> groups,
         int hScale)
     {
-        foreach (var entry in signal.EnumerateArray())
+        ParseSignalMembers(signal.EnumerateArray(), level, row, lanes, groups, hScale);
+    }
+
+    private static void ParseSignalMembers(
+        IEnumerable<JsonElement> entries,
+        int level,
+        int row,
+        List<WaveDromLane> lanes,
+        List<WaveDromGroup> groups,
+        int hScale)
+    {
+        foreach (var entry in entries)
         {
             if (entry.ValueKind == JsonValueKind.Object &&
                 entry.TryGetProperty("signal", out var nested) &&
@@ -316,6 +334,36 @@ public static class WaveDromParser
                 groups.Add(new WaveDromGroup
                 {
                     Name = name,
+                    X = level * 5,
+                    Y = startRow,
+                    Height = lanes.Count - startRow
+                });
+                continue;
+            }
+
+            // Array group form (official rec.js): ['Name', {...lane}, [...subgroup]].
+            // The first element is the group name; the remaining elements are
+            // signals or nested groups.
+            if (entry.ValueKind == JsonValueKind.Array)
+            {
+                string? groupName = null;
+                var startIndex = 0;
+                var first = entry.EnumerateArray().FirstOrDefault();
+                if (first.ValueKind is JsonValueKind.String or JsonValueKind.Number)
+                {
+                    groupName = first.ValueKind == JsonValueKind.String
+                        ? first.GetString()
+                        : first.ToString();
+                    startIndex = 1;
+                }
+
+                var members = entry.EnumerateArray().Skip(startIndex).ToArray();
+                var startRow = lanes.Count;
+                ParseSignalMembers(members, level + 1, row, lanes, groups, hScale);
+
+                groups.Add(new WaveDromGroup
+                {
+                    Name = groupName,
                     X = level * 5,
                     Y = startRow,
                     Height = lanes.Count - startRow

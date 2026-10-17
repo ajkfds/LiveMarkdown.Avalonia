@@ -179,6 +179,62 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_ParsesStep2ClockWaveDefinitions()
+    {
+        Assert.DoesNotThrow(() => WaveDromParser.Parse(
+            """
+            { signal: [
+              { name: "pclk", wave: 'p.......' },
+              { name: "Pclk", wave: 'P.......' },
+              { name: "nclk", wave: 'n.......' },
+              { name: "Nclk", wave: 'N.......' },
+              {},
+              { name: 'clk0', wave: 'phnlPHNL' },
+              { name: 'clk1', wave: 'xhlhLHl.' },
+              { name: 'clk2', wave: 'hpHplnLn' },
+              { name: 'clk3', wave: 'nhNhplPl' },
+              { name: 'clk4', wave: 'xlh.L.Hx' },
+            ]}
+            """));
+    }
+
+    [Test]
+    public void Parser_ParsesStep5ArrayGroups()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [
+              {    name: 'clk',   wave: 'p..Pp..P'},
+              ['Master',
+                ['ctrl',
+                  {name: 'write', wave: '01.0....'},
+                  {name: 'read',  wave: '0...1..0'}
+                ],
+                {  name: 'addr',  wave: 'x3.x4..x', data: 'A1 A2'},
+                {  name: 'wdata', wave: 'x3.x....', data: 'D1'   },
+              ],
+              {},
+              ['Slave',
+                ['ctrl',
+                  {name: 'ack',   wave: 'x01x0.1x'},
+                ],
+                {  name: 'rdata', wave: 'x.....4x', data: 'Q2'},
+              ]
+            ]}
+            """);
+
+        // clk, {} (empty spacer lane, counted like the official rec.js),
+        // write, read, addr, wdata, ack, rdata = 8 lanes.
+        Assert.That(diagram.Lanes, Has.Length.EqualTo(8));
+        Assert.That(diagram.Lanes.Select(l => l.Name),
+            Does.Contain("write").And.Contain("read").And.Contain("addr")
+                .And.Contain("wdata").And.Contain("ack").And.Contain("rdata"));
+        Assert.That(diagram.Groups.Any(g => g.Name == "Master"), Is.True);
+        Assert.That(diagram.Groups.Any(g => g.Name == "Slave"), Is.True);
+        Assert.That(diagram.Groups.Any(g => g.Name == "ctrl"), Is.True);
+    }
+
+    [Test]
     public void Measure_DataDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter

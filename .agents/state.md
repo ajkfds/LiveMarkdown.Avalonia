@@ -8,6 +8,11 @@
 
 ## 完了済みタスク
 
+- WaveDrom の Step2 / Step5 サンプルのパースエラー修正
+    - 末尾カンマ（trailing comma）を許容するよう `JsonDocumentOptions.AllowTrailingCommas`
+      を有効化（Step2 の `clk4` 波形配列など）。
+    - 公式 `rec.js` の配列形式グループ `['Name', {...}, [...]]` に対応
+      （Step5 の Master/Slave/ctrl グループ）。`ParseSignalMembers` を追加。
 - WaveDrom の data 列（バス波形）の塗りつぶしを修正
     - `SvgPathParser` の `BeginFigure` に `isFilled: false` を渡していたため、
       バスの色（s7〜s14 の塗り）が描画されなくなっていた。`true` に修正。
