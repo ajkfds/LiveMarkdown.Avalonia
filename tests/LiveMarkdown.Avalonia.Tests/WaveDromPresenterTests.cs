@@ -303,6 +303,55 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_ExpandsHeadFootTicksWithEveryStride()
+    {
+        // Step 7, 4th sample: head tick from 0 with every=2, foot tock from 9.
+        var diagram = WaveDromParser.Parse(
+            """
+            {signal: [
+              {name:'clk', wave: 'p....' },
+              {name:'Data', wave: 'x345x', data: 'a b c' },
+              {name:'Request', wave: '0....' }
+            ],
+             head:{ text:'WaveDrom example', tick:0, every:2 },
+             foot:{ text:'Figure 100', tock:9 },
+            }
+            """);
+
+        Assert.That(diagram.HeadText, Is.EqualTo("WaveDrom example"));
+        Assert.That(diagram.FootText, Is.EqualTo("Figure 100"));
+
+        // head tick: numeric 0..N but every=2 keeps indices 0,2,4,...
+        Assert.That(diagram.HeadTick[0], Is.EqualTo("0"));
+        Assert.That(diagram.HeadTick[1], Is.Null);
+        Assert.That(diagram.HeadTick[2], Is.EqualTo("2"));
+        Assert.That(diagram.HeadTick[3], Is.Null);
+
+        // foot tock starts at 9 (no every) -> 9,10,11,...
+        Assert.That(diagram.FootTock.Length, Is.GreaterThan(0));
+        Assert.That(diagram.FootTock[0], Is.EqualTo("9"));
+        Assert.That(diagram.FootTock[1], Is.EqualTo("10"));
+    }
+
+    [Test]
+    public void Parser_TickCountsFollowWaveLengthNotLaneCount()
+    {
+        // 3 lanes but a 10-half-brick wave; ticks = xmax/(2*hscale)+1.
+        var diagram = WaveDromParser.Parse(
+            """
+            {signal: [
+              {name:'a', wave: 'p....'},
+              {name:'b', wave: 'p....'},
+              {name:'c', wave: 'p....'}
+            ],
+             head:{ tick:0 }}
+            """);
+
+        Assert.That(diagram.XMax, Is.EqualTo(10));
+        Assert.That(diagram.HeadTick.Length, Is.EqualTo(6)); // 10/2 + 1
+    }
+
+    [Test]
     public void Measure_EdgeDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter

@@ -31,6 +31,10 @@
 
 ## 完了済みタスク
 
+- WaveDrom の head/foot tick/tock/every を修正
+    - tick/tock の個数を「レーン数」ではなく波形長（`xmax / (2*hscale)`）基準に修正
+      （公式 `render-marks.js` の `marks` に一致）。tick=marks+1、tock=marks。
+    - `head.every` / `foot.every` の間引き（`(i + offset) % every` で skip）に対応。
 - WaveDrom の header/footer 横位置と `+` エッジの tee マーカーを修正
     - head/foot テキストを公式 `render-marks.js` どおり波形領域中央
       （`xg + xmax*xs/2`）に配置（従来は左ガター中央 `xg/2` で誤り）。

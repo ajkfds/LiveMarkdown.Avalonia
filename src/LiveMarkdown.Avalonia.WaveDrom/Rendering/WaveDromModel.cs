@@ -116,21 +116,23 @@ public static class WaveDromParser
             ParseSignal(signal, lanes, groups, hScale);
         }
 
+        var xMax = Math.Max(lanes.Count > 0 ? lanes.Max(l => l.Bricks.Length) : 1, 1);
+
+        // Official render-marks.js derives tick/tock counts from the wave
+        // length (xmax / (2*hscale)), not the lane count.
         string? headText = null, footText = null;
         string?[] headTick = [], headTock = [], footTick = [], footTock = [];
         if (root.TryGetProperty("head", out var head) && head.ValueKind == JsonValueKind.Object)
         {
             headText = GetText(head);
-            (headTick, headTock) = GetTicks(head, lanes.Count, hScale);
+            (headTick, headTock) = GetTicks(head, xMax, hScale);
         }
 
         if (root.TryGetProperty("foot", out var foot) && foot.ValueKind == JsonValueKind.Object)
         {
             footText = GetText(foot);
-            (footTick, footTock) = GetTicks(foot, lanes.Count, hScale);
+            (footTick, footTock) = GetTicks(foot, xMax, hScale);
         }
-
-        var xMax = Math.Max(lanes.Count > 0 ? lanes.Max(l => l.Bricks.Length) : 1, 1);
 
         var edges = root.TryGetProperty("edge", out var edgeElement) &&
                     edgeElement.ValueKind == JsonValueKind.Array
@@ -257,33 +259,58 @@ public static class WaveDromParser
             : null;
     }
 
-    private static (string?[] tick, string?[] tock) GetTicks(JsonElement element, int laneCount, int hScale)
+    /// <summary>
+    /// Port of the official render-marks.js ticktock(): expands tick/tock into
+    /// per-position labels, applies the head/foot <c>every</c> stride, and
+    /// leaves filtered positions null so the renderer skips them.
+    /// </summary>
+    private static (string?[] tick, string?[] tock) GetTicks(JsonElement element, int xMax, int hScale)
     {
-        var tickCount = laneCount / (2 * hScale) + 1;
-        var tick = new string?[tickCount];
-        var tock = new string?[tickCount > 0 ? tickCount - 1 : 0];
+        // marks = xmax / (2*hscale); ticks are marks+1, tocks are marks.
+        var marks = xMax / (2 * hScale);
+        var tickCount = marks + 1;
+        var tockCount = marks;
+
+        var every = element.TryGetProperty("every", out var everyElement) &&
+                    everyElement.ValueKind == JsonValueKind.Number
+            ? Math.Max(0, everyElement.GetInt32())
+            : 0;
+
+        var tick = new string?[Math.Max(tickCount, 0)];
+        var tock = new string?[Math.Max(tockCount, 0)];
 
         if (element.TryGetProperty("tick", out var tickElement))
         {
-            tick = ExpandTick(tickElement, tickCount);
+            tick = ExpandTick(tickElement, tickCount, every);
         }
 
         if (element.TryGetProperty("tock", out var tockElement))
         {
-            tock = ExpandTick(tockElement, tock.Length);
+            tock = ExpandTick(tockElement, tockCount, every);
         }
 
         return (tick, tock);
     }
 
-    private static string?[] ExpandTick(JsonElement element, int length)
+    private static string?[] ExpandTick(JsonElement element, int length, int every)
     {
+        if (length <= 0)
+        {
+            return [];
+        }
+
         var result = new string?[length];
+        // Numeric start offset, used both for label generation and the
+        // (i + offset) % every stride check in the official code.
+        var offset = 0;
+        var hasNumericOffset = false;
+
         switch (element.ValueKind)
         {
             case JsonValueKind.Number:
             {
-                var offset = element.GetInt32();
+                offset = element.GetInt32();
+                hasNumericOffset = true;
                 for (var i = 0; i < length; i++)
                 {
                     result[i] = (i + offset).ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -294,8 +321,10 @@ public static class WaveDromParser
             case JsonValueKind.String:
             {
                 var parts = element.GetString()?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
-                if (parts.Length == 1 && int.TryParse(parts[0], out var offset))
+                if (parts.Length == 1 && int.TryParse(parts[0], out var o))
                 {
+                    offset = o;
+                    hasNumericOffset = true;
                     for (var i = 0; i < length; i++)
                     {
                         result[i] = (i + offset).ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -321,6 +350,19 @@ public static class WaveDromParser
                 }
 
                 break;
+            }
+        }
+
+        // Apply the every stride (official: skip when (i + offset) % every != 0).
+        if (every > 0)
+        {
+            var baseOffset = hasNumericOffset ? offset : 0;
+            for (var i = 0; i < length; i++)
+            {
+                if ((i + baseOffset) % every != 0)
+                {
+                    result[i] = null;
+                }
             }
         }
 
