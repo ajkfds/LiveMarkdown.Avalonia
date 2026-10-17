@@ -253,6 +253,82 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_ParsesStep8NodeAndEdgeDefinitions()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [
+              { name: 'A', wave: '01........0....',  node: '.a........j' },
+              { name: 'B', wave: '0.1.......0.1..',  node: '..b.......i' },
+              { name: 'C', wave: '0..1....0...1..',  node: '...c....h..' },
+              { name: 'D', wave: '0...1..0.....1.',  node: '....d..g...' },
+              { name: 'E', wave: '0....10.......1',  node: '.....ef....' }
+              ],
+              edge: [
+                'a~b t1', 'c-~a t2', 'c-~>d time 3', 'd~-e',
+                'e~>f', 'f->g', 'g-~>h', 'h~>i some text', 'h~->j'
+              ]
+            }
+            """);
+
+        Assert.That(diagram.Lanes, Has.Length.EqualTo(5));
+        Assert.That(diagram.Lanes[0].Node, Is.EqualTo(".a........j"));
+        Assert.That(diagram.Edges, Has.Length.EqualTo(9));
+        Assert.That(diagram.Edges[0], Is.EqualTo("a~b t1"));
+        Assert.That(diagram.Edges[2], Is.EqualTo("c-~>d time 3"));
+    }
+
+    [Test]
+    public void Parser_ParsesStep8SecondEdgeSet()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [
+              { name: 'A', wave: '01..0..',  node: '.a..e..' },
+              { name: 'B', wave: '0.1..0.',  node: '..b..d.', phase:0.5 },
+              { name: 'C', wave: '0..1..0',  node: '...c..f' },
+              {                              node: '...g..h' },
+              {                              node: '...I..J',  phase:0.5 },
+              { name: 'D', wave: '0..1..0',  phase:0.5 }
+              ],
+              edge: [
+                'b-|a t1', 'a-|c t2', 'b-|-c t3', 'c-|->e t4', 'e-|>f more text',
+                'e|->d t6', 'c-g', 'f-h', 'g<->h 3 ms', 'I+J 5 ms'
+              ]
+            }
+            """);
+
+        Assert.That(diagram.Lanes, Has.Length.EqualTo(6));
+        Assert.That(diagram.Edges, Has.Length.EqualTo(10));
+    }
+
+    [Test]
+    public void Measure_EdgeDiagramRendersWithoutThrowing()
+    {
+        var presenter = new WaveDromPresenter
+        {
+            Text = """
+                   { signal: [
+                     { name: 'A', wave: '01........0....',  node: '.a........j' },
+                     { name: 'B', wave: '0.1.......0.1..',  node: '..b.......i' },
+                     { name: 'C', wave: '0..1....0...1..',  node: '...c....h..' },
+                     { name: 'D', wave: '0...1..0.....1.',  node: '....d..g...' },
+                     { name: 'E', wave: '0....10.......1',  node: '.....ef....' }
+                     ],
+                     edge: [
+                       'a~b t1', 'c-~a t2', 'c-~>d time 3', 'd~-e',
+                       'e~>f', 'f->g', 'g-~>h', 'h~>i some text', 'h~->j'
+                     ]
+                   }
+                   """
+        };
+
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
+
+    [Test]
     public void Measure_DataDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter

@@ -10,9 +10,9 @@
 
 - ブランチ: `main`（origin/main より 8 コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 190 件成功
-    - WaveDrom 関連は 2 フィクスチャ・計 24 件
-        - `WaveDromPresenterTests`（20 件、プラットフォーム不要）
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 193 件成功
+    - WaveDrom 関連は 2 フィクスチャ・計 27 件
+        - `WaveDromPresenterTests`（23 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
@@ -31,6 +31,15 @@
 
 ## 完了済みタスク
 
+- WaveDrom の Step8（node / edge の矢印）描画に対応
+    - パーサ: レーンの `node` 文字列とトップレベルの `edge` 配列を `WaveDromDiagram`
+      / `WaveDromLane` に取り込み。
+    - プレゼンタに `DrawEdges` を追加（公式 `render-arcs.js` のイベント解決 +
+      `arc-shape.js` のパス形状を移植）。`-`, `~`, `-~`, `~-`, `-|`, `|-`, `-|-`,
+      `+` および `>`/`<` の矢印/矢じりマーカー、`<->` 両端矢印に対応。
+    - エッジラベルは白背景ボックス付き（公式 `render-label.js`）で描画。
+    - 小文字イベント名の単独ラベル描画にも対応。
+    - Step8 の node/edge パース・Measure テストを追加。
 - WaveDrom のグループテキスト位置を修正
     - `DrawRotatedText` を公式 `render-groups.js` の変換
       （`translate(x,y)` → `rotate(270)` → `text-anchor: middle`、ベースライン基準）

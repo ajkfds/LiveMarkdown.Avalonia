@@ -19,6 +19,12 @@ public sealed class WaveDromDiagram
     public required bool ShowMarks { get; init; }
     public required int HScale { get; init; }
     public required int XMax { get; init; }
+
+    /// <summary>
+    /// Raw <c>edge</c> entries (e.g. <c>"a~b t1"</c>) from the top-level
+    /// <c>edge</c> array. Rendered as arcs/arrows between signal nodes.
+    /// </summary>
+    public required string[] Edges { get; init; }
 }
 
 /// <summary>
@@ -32,6 +38,12 @@ public sealed class WaveDromLane
     public double Phase { get; init; }
     public required string[] Bricks { get; init; }
     public required string?[] Labels { get; init; }
+
+    /// <summary>
+    /// Raw <c>node</c> string (one char per half-brick position, e.g. ".a..j").
+    /// Non-dot characters name event anchor points referenced by <c>edge</c>.
+    /// </summary>
+    public string? Node { get; init; }
     public int GroupLevel { get; init; }
     public int GroupStartRow { get; init; }
     public int GroupHeight { get; init; }
@@ -120,6 +132,14 @@ public static class WaveDromParser
 
         var xMax = Math.Max(lanes.Count > 0 ? lanes.Max(l => l.Bricks.Length) : 1, 1);
 
+        var edges = root.TryGetProperty("edge", out var edgeElement) &&
+                    edgeElement.ValueKind == JsonValueKind.Array
+            ? edgeElement.EnumerateArray()
+                .Where(x => x.ValueKind == JsonValueKind.String)
+                .Select(x => x.GetString() ?? string.Empty)
+                .ToArray()
+            : [];
+
         return new WaveDromDiagram
         {
             Lanes = [.. lanes],
@@ -132,7 +152,8 @@ public static class WaveDromParser
             FootTock = footTock,
             ShowMarks = showMarks,
             HScale = hScale,
-            XMax = xMax
+            XMax = xMax,
+            Edges = edges
         };
     }
 
@@ -457,7 +478,11 @@ public static class WaveDromParser
             Bricks = bricks,
             Labels = [.. labels],
             GroupLevel = level,
-            XOffset = xOffset
+            XOffset = xOffset,
+            Node = entry.TryGetProperty("node", out var nodeElement) &&
+                   nodeElement.ValueKind == JsonValueKind.String
+                ? nodeElement.GetString()
+                : null
         };
     }
 

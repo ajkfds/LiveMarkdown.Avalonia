@@ -397,6 +397,12 @@ public class WaveDromPresenter : Control
             }
         }
 
+        // Arrows / edges (official render-arcs.js + arc-shape.js).
+        if (diagram.Edges.Length > 0)
+        {
+            DrawEdges(dc, diagram, xg, lanesTop, typeface);
+        }
+
         y = lanesTop + diagram.Lanes.Length * WaveDromParser.Yo;
 
         // Foot tick/tock numbers.
@@ -433,6 +439,270 @@ public class WaveDromPresenter : Control
     // ym = 15 (data label baseline y within the lane).
     private const double WaveDromXlabel = 6;
     private const double WaveDromYm = 15;
+
+    // Official render-arcs.js arrow color.
+    private static readonly Color ArcColor = Color.FromRgb(0x00, 0x41, 0xC4);
+
+    /// <summary>
+    /// Draws the <c>node</c>/<c>edge</c> arrows, ported from the official
+    /// render-arcs.js (event resolution) and arc-shape.js (path geometry).
+    /// Event anchors come from each lane's <c>node</c> string; edges connect
+    /// them with straight or curved segments and optional arrowheads.
+    /// </summary>
+    private void DrawEdges(DrawingContext dc, WaveDromDiagram diagram, double xg, double lanesTop, Typeface typeface)
+    {
+        // Resolve node event anchors: char -> point (relative to wave origin).
+        var events = new Dictionary<char, Point>();
+        for (var i = 0; i < diagram.Lanes.Length; i++)
+        {
+            var lane = diagram.Lanes[i];
+            if (lane.Node is not { Length: > 0 } node)
+            {
+                continue;
+            }
+
+            var period = lane.Period;
+            var phase2 = lane.Phase * 2;
+            var laneRowY = i * WaveDromParser.Yo + WaveDromParser.Y0 + WaveDromParser.Ys * 0.5;
+
+            for (var pos = 0; pos < node.Length; pos++)
+            {
+                var c = node[pos];
+                if (c == '.')
+                {
+                    continue;
+                }
+
+                var ex = WaveDromParser.Xs * (2 * pos * period * diagram.HScale - phase2) + WaveDromXlabel;
+                events[c] = new Point(ex, laneRowY);
+            }
+        }
+
+        var arcPen = new Pen(new SolidColorBrush(ArcColor), 1);
+        var arcFontSize = 11d;
+
+        foreach (var edge in diagram.Edges)
+        {
+            var spec = edge.Trim();
+            var spaceIndex = spec.IndexOf(' ');
+            var token = spaceIndex >= 0 ? spec[..spaceIndex] : spec;
+            var label = spaceIndex >= 0 ? spec[(spaceIndex + 1)..] : null;
+
+            if (token.Length < 2)
+            {
+                continue;
+            }
+
+            var fromChar = token[0];
+            var toChar = token[^1];
+            var shape = token.Length > 2 ? token[1..^1] : "-";
+
+            if (!events.TryGetValue(fromChar, out var fromRel) ||
+                !events.TryGetValue(toChar, out var toRel))
+            {
+                continue;
+            }
+
+            // Convert to absolute drawing coordinates.
+            var from = new Point(xg + fromRel.X, lanesTop + fromRel.Y);
+            var to = new Point(xg + toRel.X, lanesTop + toRel.Y);
+
+            var arc = BuildArc(shape, from, to, label is not null);
+            dc.DrawGeometry(null, arcPen, arc.Path);
+
+            if (arc.Head)
+            {
+                DrawArrowMarker(dc, to, arc.EndDir, forward: true);
+            }
+
+            if (arc.Tail)
+            {
+                DrawArrowMarker(dc, from, arc.StartDir, forward: false);
+            }
+
+            if (label is { Length: > 0 })
+            {
+                DrawArcLabel(dc, label, typeface, arc.Label, arcFontSize);
+            }
+        }
+
+        // Lower-case event names are drawn as standalone labels (official behavior).
+        foreach (var (name, rel) in events)
+        {
+            if (!char.IsLower(name))
+            {
+                continue;
+            }
+
+            var x = xg + rel.X;
+            if (x > 0)
+            {
+                DrawArcLabel(dc, name.ToString(), typeface, new Point(x, lanesTop + rel.Y), arcFontSize);
+            }
+        }
+    }
+
+    private readonly record struct ArcResult(
+        StreamGeometry Path,
+        bool Head,
+        bool Tail,
+        double StartDir,
+        double EndDir,
+        Point Label);
+
+    /// <summary>
+    /// Builds an edge path following the official arc-shape.js geometry.
+    /// Returns the geometry, arrow head/tail flags, entry/exit tangent angles,
+    /// and the label anchor point.
+    /// </summary>
+    private static ArcResult BuildArc(string shape, Point from, Point to, bool hasLabel)
+    {
+        var dx = to.X - from.X;
+        var dy = to.Y - from.Y;
+        var lx = (from.X + to.X) / 2;
+        var ly = (from.Y + to.Y) / 2;
+
+        // Arrow markers are '<' (start) and '>' (end) around a base shape.
+        var head = shape.EndsWith('>');
+        var tail = shape.StartsWith('<');
+        var baseShape = shape.Trim('<', '>');
+
+        var straightAngle = Math.Atan2(dy, dx);
+        var startDir = straightAngle;
+        var endDir = straightAngle;
+
+        var geometry = new StreamGeometry();
+        using var ctx = geometry.Open();
+
+        // For '-' (and the arrow '-' variants) arc-shape.js emits no `d`, so
+        // render-arcs.js falls back to a straight line from -> to.
+        if (baseShape is "-" or "")
+        {
+            ctx.BeginFigure(from, false);
+            ctx.LineTo(to);
+            ctx.EndFigure(false);
+            return new ArcResult(geometry, head, tail, startDir, endDir, new Point(lx, ly));
+        }
+
+        switch (baseShape)
+        {
+            case "~":
+            {
+                var c1 = new Point(from.X + 0.7 * dx, from.Y);
+                var c2 = new Point(from.X + 0.3 * dx, from.Y + dy);
+                ctx.BeginFigure(from, false);
+                ctx.CubicBezierTo(c1, c2, to);
+                ctx.EndFigure(false);
+                startDir = Math.Atan2(c1.Y - from.Y, c1.X - from.X);
+                endDir = Math.Atan2(to.Y - c2.Y, to.X - c2.X);
+                break;
+            }
+            case "-~":
+            {
+                var c1 = new Point(from.X + 0.7 * dx, from.Y);
+                ctx.BeginFigure(from, false);
+                ctx.CubicBezierTo(c1, to, to);
+                ctx.EndFigure(false);
+                startDir = Math.Atan2(c1.Y - from.Y, c1.X - from.X);
+                endDir = Math.Atan2(to.Y - to.Y, to.X - to.X);
+                if (hasLabel) lx = from.X + (to.X - from.X) * 0.75;
+                break;
+            }
+            case "~-":
+            {
+                var c2 = new Point(from.X + 0.3 * dx, from.Y + dy);
+                ctx.BeginFigure(from, false);
+                ctx.CubicBezierTo(from, c2, to);
+                ctx.EndFigure(false);
+                startDir = Math.Atan2(from.Y - from.Y, from.X - from.X);
+                endDir = Math.Atan2(to.Y - c2.Y, to.X - c2.X);
+                if (hasLabel) lx = from.X + (to.X - from.X) * 0.25;
+                break;
+            }
+            case "-|":
+                ctx.BeginFigure(from, false);
+                ctx.LineTo(new Point(from.X + dx, from.Y));
+                ctx.LineTo(new Point(from.X + dx, from.Y + dy));
+                ctx.EndFigure(false);
+                startDir = 0;
+                endDir = dy >= 0 ? Math.PI / 2 : -Math.PI / 2;
+                if (hasLabel) lx = to.X;
+                break;
+            case "|-":
+                ctx.BeginFigure(from, false);
+                ctx.LineTo(new Point(from.X, from.Y + dy));
+                ctx.LineTo(new Point(from.X + dx, from.Y + dy));
+                ctx.EndFigure(false);
+                startDir = dy >= 0 ? Math.PI / 2 : -Math.PI / 2;
+                endDir = dx >= 0 ? 0 : Math.PI;
+                if (hasLabel) lx = from.X;
+                break;
+            case "-|-":
+                ctx.BeginFigure(from, false);
+                ctx.LineTo(new Point(from.X + dx / 2, from.Y));
+                ctx.LineTo(new Point(from.X + dx / 2, from.Y + dy));
+                ctx.LineTo(new Point(from.X + dx, from.Y + dy));
+                ctx.EndFigure(false);
+                startDir = 0;
+                endDir = dx >= 0 ? 0 : Math.PI;
+                break;
+            case "+":
+                ctx.BeginFigure(from, false);
+                ctx.LineTo(to);
+                ctx.EndFigure(false);
+                break;
+            default:
+                ctx.BeginFigure(from, false);
+                ctx.LineTo(to);
+                ctx.EndFigure(false);
+                break;
+        }
+
+        return new ArcResult(geometry, head, tail, startDir, endDir, new Point(lx, ly));
+    }
+
+    /// <summary>Draws a filled arrowhead/arrowtail marker at <paramref name="tip"/>.</summary>
+    private void DrawArrowMarker(DrawingContext dc, Point tip, double direction, bool forward)
+    {
+        var dir = forward ? direction : direction + Math.PI;
+        const double size = 8;
+        var spread = Math.PI / 9;
+        var left = new Point(tip.X - size * Math.Cos(dir - spread), tip.Y - size * Math.Sin(dir - spread));
+        var right = new Point(tip.X - size * Math.Cos(dir + spread), tip.Y - size * Math.Sin(dir + spread));
+
+        var geometry = new StreamGeometry();
+        using (var ctx = geometry.Open())
+        {
+            ctx.BeginFigure(tip, true);
+            ctx.LineTo(left);
+            ctx.LineTo(right);
+            ctx.EndFigure(true);
+        }
+
+        dc.DrawGeometry(new SolidColorBrush(ArcColor), null, geometry);
+    }
+
+    /// <summary>Draws an edge/node label with a white background box (render-label.js).</summary>
+    private void DrawArcLabel(DrawingContext dc, string text, Typeface typeface, Point center, double fontSize)
+    {
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        var formatted = new FormattedText(
+            text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            Foreground ?? Brushes.Black);
+
+        var w = formatted.Width + 2;
+        var rect = new Rect(center.X - w / 2, center.Y - fontSize / 2, w, fontSize);
+        dc.DrawRectangle(Brushes.White, null, rect);
+        dc.DrawText(formatted, new Point(center.X - formatted.Width / 2, center.Y + 0.3 * fontSize - formatted.Baseline));
+    }
 
     /// <summary>
     /// Draws one half-brick (20x20 cell) identified by a WaveDrom skin id,
