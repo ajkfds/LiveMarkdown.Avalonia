@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -942,10 +942,6 @@ public class MermaidPresenter : Control
 
             var size = default(Size);
             var options = RenderOptions;
-            if (options?.Strict is { } strict)
-            {
-                StrictModeValidator.Validate(input.Lines, strict);
-            }
 
             var diagramType = DiagramDetector.Detect(input.CleanedText.AsSpan());
             object diagram = diagramType switch

@@ -1,0 +1,20 @@
+{
+  "Name": "LiveMarkdown.Avalonia.Solution",
+  "LastUpdate": "2026-10-17T17:09:34.4891622+09:00",
+  "ProjectSetups": [
+    {
+      "Name": "LiveMarkdown.Avalonia",
+      "RootPath": "D:\\Source\\LiveMarkdown.Avalonia",
+      "LocalFileCasheEnable": false,
+      "LocalFileCashePath": "c:\\temp",
+      "ProjectProperties": {
+        "Verilog": {
+          "ID": "Verilog",
+          "test": "verilogTest",
+          "CompileOption": ""
+        }
+      }
+    }
+  ],
+  "AbsolutePath": "D:\\Source\\LiveMarkdown.Avalonia\\LiveMarkdown.Avalonia.Solution.sln.json"
+}

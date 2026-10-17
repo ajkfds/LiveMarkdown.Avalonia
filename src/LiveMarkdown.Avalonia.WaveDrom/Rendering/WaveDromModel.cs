@@ -55,7 +55,7 @@ public static class WaveDromParser
 
     public static WaveDromDiagram Parse(string source)
     {
-        using var document = JsonDocument.Parse(source);
+        using var document = JsonDocument.Parse(NormalizeSource(source));
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
         {
@@ -121,6 +121,95 @@ public static class WaveDromParser
             XMax = xMax
         };
     }
+
+    /// <summary>
+    /// Normalizes WaveDrom's relaxed JSON dialect (JavaScript-style object
+    /// literals) into strict JSON that <see cref="JsonDocument"/> can parse.
+    /// The official WaveDrom grammar allows unquoted property names
+    /// (e.g. <c>{ signal: [...] }</c>) and single-quoted strings, which
+    /// strict JSON rejects.
+    /// </summary>
+    internal static string NormalizeSource(string source)
+    {
+        var builder = new System.Text.StringBuilder(source.Length + 16);
+        var inString = false;
+        var quoteChar = '"';
+        var i = 0;
+
+        while (i < source.Length)
+        {
+            var c = source[i];
+
+            if (inString)
+            {
+                builder.Append(c);
+                if (c == '\\' && i + 1 < source.Length)
+                {
+                    builder.Append(source[i + 1]);
+                    i += 2;
+                    continue;
+                }
+
+                if (c == quoteChar)
+                {
+                    inString = false;
+                }
+
+                i++;
+                continue;
+            }
+
+            if (c is '"' or '\'')
+            {
+                inString = true;
+                quoteChar = c;
+                builder.Append('"');
+                i++;
+                continue;
+            }
+
+            // Detect an unquoted property name: a run of identifier chars that
+            // is followed (after optional whitespace) by a colon.
+            if (IsIdentifierStart(c))
+            {
+                var start = i;
+                i++;
+                while (i < source.Length && IsIdentifierPart(source[i]))
+                {
+                    i++;
+                }
+
+                var name = source[start..i];
+                var lookahead = i;
+                while (lookahead < source.Length && char.IsWhiteSpace(source[lookahead]))
+                {
+                    lookahead++;
+                }
+
+                if (lookahead < source.Length && source[lookahead] == ':')
+                {
+                    builder.Append('"').Append(name).Append('"');
+                }
+                else
+                {
+                    builder.Append(name);
+                }
+
+                continue;
+            }
+
+            builder.Append(c);
+            i++;
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool IsIdentifierStart(char c)
+        => c == '_' || c == '$' || char.IsLetter(c);
+
+    private static bool IsIdentifierPart(char c)
+        => c == '_' || c == '$' || char.IsLetterOrDigit(c);
 
     private static string? GetText(JsonElement element)
     {
