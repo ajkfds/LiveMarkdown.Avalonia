@@ -8,11 +8,12 @@
 
 ## 現在の状態サマリ
 
-- ブランチ: `main`（origin/main より 8 コミット先行）
+- ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 193 件成功
-    - WaveDrom 関連は 2 フィクスチャ・計 27 件
-        - `WaveDromPresenterTests`（23 件、プラットフォーム不要）
+- ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 202 件成功
+    - WaveDrom 関連は 2 フィクスチャ・計 32 件
+        - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
@@ -125,16 +126,14 @@
 
 ## Next Steps
 
+- 描画品質（残り）
+    - `config.skin`（narrow / dark 等の他スキン）。ブリック寸法（xs/ys）が default と異なるため未対応
+    - `s1`〜`s16` の他スキン塗り色のテーマ連動
+    - 公式 `text-width.js`（char-width.json）準拠のテキスト幅計測
 - 描画結果（見た目）のテスト基盤を追加する（現状は座標計算までしか検証できていない）
     - `DrawRotatedText` / `DrawMiddleAnchoredText` 等の Transform を関数抽出し、
       点のマッピングをユニットテスト
     - Avalonia Headless でレンダリングしたビットマップのスナップショット（黄金画像）テスト
     - 公式 `wavedrom/test/*.svg` との図形座標の比較テスト
-- `.agents/wavedrom-todo.md` の未対応項目を順次実装する
-    - スレーブ信号 (`wave: "s..."`)
-    - `period` / `phase` の小数値完全対応
-    - サブサイクル `<` / `>` の描画幅精密化
-    - ソフトカーブ (`0mz` / `1mz` / `zmu` 等) のベジェ曲線再現
-    - `head` / `foot` の複数行・`every` 対応
-    - `node` / `edge` プロパティと矢印描画
+- スレーブ信号 (`wave: "s..."`)（公式 JS にも描画コードがなく、仕様検討が必要）
 - Mermaid 側のさらなる API 追随（StrictModeValidator の検証内容・レポート活用）

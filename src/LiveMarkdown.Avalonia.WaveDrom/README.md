@@ -14,8 +14,8 @@
 - 🎨 **公式スキン準拠** — 公式 default スキンのブリック定義（`pclk`/`nclk`/`vvv-N`/`xm*` 等）や
   テキストクラス色（`info`/`muted`/`error`/`warning`/`success`、見出し `h1`〜`h6`）に対応。
 - 🔄 **ストリーミング対応** — フェンスが開いている間はソーステキストを表示し、確定後に波形図へ切り替え。
-- 🧮 **充実した要素** — signal / data / node / edge（矢印）/ group / head / foot（tick/tock/every、
-  tspan リッチテキスト）/ config（hscale, marks）。
+- 🧮 **充実した要素** — signal / data / node / edge（矢印）/ group / gaps（縦線・ブラケット）/
+  head / foot（tick/tock/every、tspan リッチテキスト）/ config（hscale, marks, hbounds, arcFontSize）。
 
 ## インストール
 
@@ -113,10 +113,10 @@ Markdown 内に ` ```wavedrom ` フェンスで WaveDrom の JSON（JavaScript �
 | バスデータ | `wave: "x.345x"`, `data: ["A", "B", "C"]` |
 | クロック | `pclk` / `nclk` / `Pclk`（矢印付き）/ `Nclk` |
 | グループ | `['Master', [...]]` / `{ name, signal: [...] }` |
-| ギャップ | `wave: "p.....|..."`（`|` はギャップ） |
+| スペーサー | `wave: "p.....|..."`（`|` はリピート／スペーサー） |
 | head / foot | `text` / `tick` / `tock` / `every` / tspan リッチテキスト |
 | 矢印・エッジ | `node: '.a..j'` + `edge: ['a~b t1', 'c-~>d time 3', ...]` |
-| ギャップ | `gaps: "....|...."`（縦線・ブラケット `[`/`]`/`(`/`)` など） |
+| gaps 図形 | `gaps: "....|...."`（縦線・ブラケット `[`/`]`/`(`/`)` など） |
 | config | `hscale`, `marks`, `hbounds`, `arcFontSize` |
 
 ### 矢印（edge）の例
