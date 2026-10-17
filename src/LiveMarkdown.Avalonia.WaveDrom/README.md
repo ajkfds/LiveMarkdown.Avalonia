@@ -154,11 +154,14 @@ Markdown 内に ` ```wavedrom ` フェンスで WaveDrom の JSON（JavaScript �
 
 ## 制限事項
 
-未対応／近似の項目があります（リポジトリの `.agents/wavedrom-todo.md` 参照）。
+一部に未対応／近似の項目があります（詳細はリポジトリの `.agents/wavedrom-todo.md` 参照）。
 
 - スレーブ信号（`wave: "s..."`）
-- `period` / `phase` の小数値の一部
-- 一部の遷移・ソフトカーブの厳密な再現
+- `config.hbounds` / `config.skin` / `config.ylines` などの一部オプション
+- `gaps` プロパティによる図形（ブラケット `[`/`]`/`(`/`)`・複数縦線など）
+- `phase` の小数値（半ブリック単位の近似）
+- default 以外のスキン（narrow / dark 等）の塗り色
+- 画面描画（ピクセル）の自動検証
 
 ## ライセンス
 
