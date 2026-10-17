@@ -67,4 +67,17 @@ public class WaveDromGeometryTests
             }
         }, CancellationToken.None).GetAwaiter().GetResult();
     }
+
+    [Test]
+    public void SvgPathParser_FillsClosedShapes()
+    {
+        _session.Dispatch(() =>
+        {
+            // vvv-2's box path is a filled rectangle covering the whole cell.
+            // The fill must be active (isFilled: true) for the data column to
+            // show its skin color.
+            var geometry = SvgPathParser.Parse("M20,20 0,20 0,0 20,0");
+            Assert.That(geometry.FillContains(new global::Avalonia.Point(10, 10)), Is.True);
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
 }

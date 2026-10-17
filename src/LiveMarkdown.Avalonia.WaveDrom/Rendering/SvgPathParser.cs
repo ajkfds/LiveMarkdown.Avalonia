@@ -44,7 +44,9 @@ internal static class SvgPathParser
                         ctx.EndFigure(false);
                     }
 
-                    ctx.BeginFigure(p, false);
+                    // isFilled must be true so skin brick fills (s7..s14, s5, s6)
+                    // are painted; stroke-only bricks are unaffected (null fill).
+                    ctx.BeginFigure(p, true);
                     current = p;
                     start = p;
                     figureOpen = true;

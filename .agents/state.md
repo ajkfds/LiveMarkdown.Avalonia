@@ -8,6 +8,9 @@
 
 ## 完了済みタスク
 
+- WaveDrom の data 列（バス波形）の塗りつぶしを修正
+    - `SvgPathParser` の `BeginFigure` に `isFilled: false` を渡していたため、
+      バスの色（s7〜s14 の塗り）が描画されなくなっていた。`true` に修正。
 - WaveDrom の data 列（バス波形）線画を公式スキン定義で描画
     - `WaveDromSkin.cs` を追加し、公式 `skins/default.js` の全ブリック（pclk/nclk、0m0/1m1、
       x系、d/u/z系、vvv-N、Nmv-N、vmv-A-B、gap 等）の SVG パス定義を移植。
