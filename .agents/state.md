@@ -31,6 +31,11 @@
 
 ## 完了済みタスク
 
+- WaveDrom の head/foot レイアウトを公式方式に修正
+    - head/foot の縦位置を固定オフセット方式（`yh0`/`yh1`/`yf0`/`yf1`、
+      `lanesTop - (yh0?33:13)`、`gy + (yf0?45:25)`）に変更。インクリメンタル積み上げを廃止。
+    - 高さ計算を公式 `insert-svg-template.js`（`lanes*yo + yh0 + yh1 + yf0 + yf1`）に一致。
+    - 見出しクラス `h1`〜`h6` のフォントサイズ（33pt〜8pt）と太字を適用（`ResolveClassFont`）。
 - WaveDrom の head/foot tspan 配列形式（リッチテキスト）に対応
     - `text` が tspan ツリー（`['tspan', {...}, 'x', [...]]`）の場合をパースし、
       `WaveDromTextSpan`（fill / class / font-size / bold / italic / overline /

@@ -195,17 +195,14 @@ public class WaveDromPresenter : Control
         var xg = ComputeLeftGutter(diagram, typeface, FontSize);
         var waveWidth = diagram.XMax * WaveDromParser.Xs;
         var width = xg + waveWidth + 10;
-        var height = WaveDromParser.Y0 +
-            diagram.Lanes.Length * WaveDromParser.Yo + 30;
-        if (diagram.HeadText is not null || diagram.HeadTick.Length > 0)
-        {
-            height += 20;
-        }
 
-        if (diagram.FootText is not null || diagram.FootTick.Length > 0)
-        {
-            height += 20;
-        }
+        // Official insert-svg-template.js height:
+        //   lanes*yo + yh0 + yh1 + yf0 + yf1.
+        var yh0 = diagram.HeadTick.Length > 0 || diagram.HeadTock.Length > 0 ? 20 : 0;
+        var yh1 = diagram.HeadTextSpans.Length > 0 ? 46 : 0;
+        var yf0 = diagram.FootTick.Length > 0 || diagram.FootTock.Length > 0 ? 20 : 0;
+        var yf1 = diagram.FootTextSpans.Length > 0 ? 46 : 0;
+        var height = diagram.Lanes.Length * WaveDromParser.Yo + yh0 + yh1 + yf0 + yf1 + WaveDromParser.Y0 + 10;
 
         return new Size(Math.Max(width, 100), Math.Max(height, 40));
     }
@@ -290,21 +287,42 @@ public class WaveDromPresenter : Control
         // area (xmax * xs / 2), not over the left gutter.
         var waveCenterX = xg + diagram.XMax * WaveDromParser.Xs / 2;
 
-        // Head text (official captext fill:#000, centered over the wave area).
-        if (diagram.HeadTextSpans.Length > 0)
+        // Official lane gaps (parse-config.js): yh0/yf0 = 20 when head/foot has
+        // tick/tock; yh1/yf1 = 46 when head/foot has text. Lanes start after
+        // the head gap, and foot content is placed at fixed offsets below the
+        // wave area rather than by incremental stacking.
+        var hasHeadNumbers = diagram.HeadTick.Length > 0 || diagram.HeadTock.Length > 0;
+        var hasHeadText = diagram.HeadTextSpans.Length > 0;
+        var hasFootNumbers = diagram.FootTick.Length > 0 || diagram.FootTock.Length > 0;
+        var hasFootText = diagram.FootTextSpans.Length > 0;
+
+        var yh0 = hasHeadNumbers ? 20 : 0;
+        var yh1 = hasHeadText ? 46 : 0;
+        var yf0 = hasFootNumbers ? 20 : 0;
+        var yf1 = hasFootText ? 46 : 0;
+
+        var diagramTop = y;
+        var headTop = diagramTop;          // top of the head region
+        var lanesTop = diagramTop + yh0 + yh1; // wave area origin
+        var waveHeight = diagram.Lanes.Length * WaveDromParser.Yo;
+        var footBaseTop = lanesTop + waveHeight;
+
+        // Head text baseline (official captext head y = yh0 ? -33 : -13).
+        if (hasHeadText)
         {
-            DrawTextSpans(dc, diagram.HeadTextSpans, typeface, waveCenterX, y + 14);
-            y += 20;
+            var headTextY = lanesTop - (hasHeadNumbers ? 33 : 13);
+            DrawTextSpans(dc, diagram.HeadTextSpans, typeface, waveCenterX, headTextY);
         }
 
-        // Head tick/tock numbers (class "muted"; tick at i*mmstep, tock at +mmstep/2).
-        if (diagram.HeadTick.Length > 0 || diagram.HeadTock.Length > 0)
+        // Head tick/tock numbers (official y = -5 relative to lanes). class "muted".
+        if (hasHeadNumbers)
         {
+            var headNumberY = lanesTop - 5;
             for (var i = 0; i < diagram.HeadTick.Length; i++)
             {
                 if (diagram.HeadTick[i] is { } tick)
                 {
-                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, y + 12);
+                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, headNumberY);
                 }
             }
 
@@ -312,14 +330,10 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.HeadTock[i] is { } tock)
                 {
-                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, y + 12);
+                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, headNumberY);
                 }
             }
-
-            y += 16;
         }
-
-        var lanesTop = y;
 
         // Vertical mark lines.
         if (diagram.ShowMarks)
@@ -409,17 +423,15 @@ public class WaveDromPresenter : Control
             DrawEdges(dc, diagram, xg, lanesTop, typeface);
         }
 
-        y = lanesTop + diagram.Lanes.Length * WaveDromParser.Yo;
-
-        // Foot tick/tock numbers (tick at i*mmstep, tock at i*mmstep + mmstep/2).
-        if (diagram.FootTick.Length > 0 || diagram.FootTock.Length > 0)
+        // Foot tick/tock numbers (official y = gy + 15 relative to lanes origin).
+        if (hasFootNumbers)
         {
-            y += 6;
+            var footNumberY = footBaseTop + 15;
             for (var i = 0; i < diagram.FootTick.Length; i++)
             {
                 if (diagram.FootTick[i] is { } tick)
                 {
-                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, y + 12);
+                    DrawMiddleAnchoredText(dc, tick, typeface, MutedBrush, xg + i * mmStep, footNumberY);
                 }
             }
 
@@ -427,17 +439,16 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTock[i] is { } tock)
                 {
-                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, y + 12);
+                    DrawMiddleAnchoredText(dc, tock, typeface, MutedBrush, xg + i * mmStep + mmStep / 2, footNumberY);
                 }
             }
-
-            y += 16;
         }
 
-        // Foot text (official captext fill:#000, centered over the wave area).
-        if (diagram.FootTextSpans.Length > 0)
+        // Foot text (official captext y = gy + (yf0 ? 45 : 25)).
+        if (hasFootText)
         {
-            DrawTextSpans(dc, diagram.FootTextSpans, typeface, waveCenterX, y + 14);
+            var footTextY = footBaseTop + (hasFootNumbers ? 45 : 25);
+            DrawTextSpans(dc, diagram.FootTextSpans, typeface, waveCenterX, footTextY);
         }
     }
 
@@ -896,12 +907,15 @@ public class WaveDromPresenter : Control
         for (var i = 0; i < spans.Length; i++)
         {
             var span = spans[i];
+            var (classSizePx, classBold) = ResolveClassFont(span.ClassName);
+            var spanSize = span.FontSize ?? classSizePx ?? FontSize;
+            var spanBold = span.Bold || classBold;
             formatted[i] = new FormattedText(
                 span.Text,
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
-                BuildTypeface(typeface, span),
-                span.FontSize ?? FontSize,
+                BuildTypeface(typeface, span.Italic, spanBold),
+                spanSize,
                 ResolveSpanBrush(span));
             totalWidth += formatted[i]!.Width;
         }
@@ -939,16 +953,50 @@ public class WaveDromPresenter : Control
         }
     }
 
-    private static Typeface BuildTypeface(Typeface baseTypeface, WaveDromTextSpan span)
+    private static Typeface BuildTypeface(Typeface baseTypeface, bool italic, bool bold)
     {
-        if (!span.Bold && !span.Italic)
+        if (!bold && !italic)
         {
             return baseTypeface;
         }
 
-        var style = span.Italic ? FontStyle.Italic : baseTypeface.Style;
-        var weight = span.Bold ? FontWeight.Bold : baseTypeface.Weight;
+        var style = italic ? FontStyle.Italic : baseTypeface.Style;
+        var weight = bold ? FontWeight.Bold : baseTypeface.Weight;
         return new Typeface(baseTypeface.FontFamily, style, weight);
+    }
+
+    /// <summary>
+    /// Maps official skin heading classes h1..h6 to a px font size (and bold),
+    /// matching the default skin CSS (.h1 { font-size:33pt } ... .h6 { 8pt }).
+    /// 1pt ~= 1.333px.
+    /// </summary>
+    private static (double? SizePx, bool Bold) ResolveClassFont(string? className)
+    {
+        if (className is not { Length: > 0 })
+        {
+            return (null, false);
+        }
+
+        foreach (var token in className.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var size = token switch
+            {
+                "h1" => 33.0 * 1.3333,
+                "h2" => 27.0 * 1.3333,
+                "h3" => 20.0 * 1.3333,
+                "h4" => 14.0 * 1.3333,
+                "h5" => 11.0 * 1.3333,
+                "h6" => 8.0 * 1.3333,
+                _ => (double?)null,
+            };
+
+            if (size is { } px)
+            {
+                return (px, true);
+            }
+        }
+
+        return (null, false);
     }
 
     /// <summary>Resolves a span's foreground from its explicit fill or skin class.</summary>

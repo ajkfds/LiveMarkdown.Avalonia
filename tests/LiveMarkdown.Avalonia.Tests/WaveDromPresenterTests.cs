@@ -407,6 +407,36 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_HeadSpanCarriesHeadingClassForFontSizing()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            {signal:[{name:'a', wave:'p'}],
+             head:{text:['tspan',['tspan',{class:'error h1'},'error '],'plain']}}
+            """);
+
+        var h1 = diagram.HeadTextSpans.Single(s => s.Text == "error ");
+        Assert.That(h1.ClassName, Is.EqualTo("error h1"));
+        // The renderer maps h1 to a much larger bold font; assert the class is
+        // preserved so ResolveClassFont can pick it up.
+        Assert.That(h1.ClassName, Does.Contain("h1"));
+    }
+
+    [Test]
+    public void Parser_FootTspanTockAccepted()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            {signal:[{name:'a', wave:'p....'}],
+             foot:{text:'Figure 100', tock:-5}}
+            """);
+
+        Assert.That(diagram.FootText, Is.EqualTo("Figure 100"));
+        Assert.That(diagram.FootTock.Length, Is.GreaterThan(0));
+        Assert.That(diagram.FootTock[0], Is.EqualTo("-5"));
+    }
+
+    [Test]
     public void Measure_EdgeDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter
