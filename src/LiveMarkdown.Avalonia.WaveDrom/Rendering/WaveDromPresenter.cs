@@ -286,21 +286,25 @@ public class WaveDromPresenter : Control
 
         var y = 4d;
 
+        // Official render-marks.js: head/foot text is centered over the wave
+        // area (xmax * xs / 2), not over the left gutter.
+        var waveCenterX = xg + diagram.XMax * WaveDromParser.Xs / 2;
+
         // Head text.
         if (diagram.HeadText is { } headText)
         {
-            DrawCenteredText(dc, headText, typeface, stroke, xg / 2, y, xg, 20);
+            DrawMiddleAnchoredText(dc, headText, typeface, stroke, waveCenterX, y + 14);
             y += 20;
         }
 
-        // Head tick/tock numbers.
+        // Head tick/tock numbers (tick at i*mmstep, tock at i*mmstep + mmstep/2).
         if (diagram.HeadTick.Length > 0 || diagram.HeadTock.Length > 0)
         {
             for (var i = 0; i < diagram.HeadTick.Length; i++)
             {
                 if (diagram.HeadTick[i] is { } tick)
                 {
-                    DrawCenteredText(dc, tick, typeface, stroke, xg + i * mmStep - mmStep / 2, y, mmStep, 14);
+                    DrawMiddleAnchoredText(dc, tick, typeface, stroke, xg + i * mmStep, y + 12);
                 }
             }
 
@@ -308,7 +312,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.HeadTock[i] is { } tock)
                 {
-                    DrawCenteredText(dc, tock, typeface, stroke, xg + i * mmStep, y, mmStep, 14);
+                    DrawMiddleAnchoredText(dc, tock, typeface, stroke, xg + i * mmStep + mmStep / 2, y + 12);
                 }
             }
 
@@ -405,7 +409,7 @@ public class WaveDromPresenter : Control
 
         y = lanesTop + diagram.Lanes.Length * WaveDromParser.Yo;
 
-        // Foot tick/tock numbers.
+        // Foot tick/tock numbers (tick at i*mmstep, tock at i*mmstep + mmstep/2).
         if (diagram.FootTick.Length > 0 || diagram.FootTock.Length > 0)
         {
             y += 6;
@@ -413,7 +417,7 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTick[i] is { } tick)
                 {
-                    DrawCenteredText(dc, tick, typeface, stroke, xg + i * mmStep - mmStep / 2, y, mmStep, 14);
+                    DrawMiddleAnchoredText(dc, tick, typeface, stroke, xg + i * mmStep, y + 12);
                 }
             }
 
@@ -421,17 +425,17 @@ public class WaveDromPresenter : Control
             {
                 if (diagram.FootTock[i] is { } tock)
                 {
-                    DrawCenteredText(dc, tock, typeface, stroke, xg + i * mmStep, y, mmStep, 14);
+                    DrawMiddleAnchoredText(dc, tock, typeface, stroke, xg + i * mmStep + mmStep / 2, y + 12);
                 }
             }
 
             y += 16;
         }
 
-        // Foot text.
+        // Foot text (centered over the wave area).
         if (diagram.FootText is { } footText)
         {
-            DrawCenteredText(dc, footText, typeface, stroke, xg / 2, y + 2, xg, 20);
+            DrawMiddleAnchoredText(dc, footText, typeface, stroke, waveCenterX, y + 14);
         }
     }
 
@@ -520,6 +524,14 @@ public class WaveDromPresenter : Control
                 DrawArrowMarker(dc, from, arc.StartDir, forward: false);
             }
 
+            if (arc.Tee)
+            {
+                // Official arc-shape.js '+' uses the SVG "tee" marker at both
+                // ends: a short vertical bar perpendicular to the edge.
+                DrawTeeMarker(dc, from, arc.StartDir);
+                DrawTeeMarker(dc, to, arc.EndDir);
+            }
+
             if (label is { Length: > 0 })
             {
                 DrawArcLabel(dc, label, typeface, arc.Label, arcFontSize);
@@ -546,6 +558,7 @@ public class WaveDromPresenter : Control
         StreamGeometry Path,
         bool Head,
         bool Tail,
+        bool Tee,
         double StartDir,
         double EndDir,
         Point Label);
@@ -566,6 +579,7 @@ public class WaveDromPresenter : Control
         var head = shape.EndsWith('>');
         var tail = shape.StartsWith('<');
         var baseShape = shape.Trim('<', '>');
+        var tee = baseShape == "+";
 
         var straightAngle = Math.Atan2(dy, dx);
         var startDir = straightAngle;
@@ -581,7 +595,7 @@ public class WaveDromPresenter : Control
             ctx.BeginFigure(from, false);
             ctx.LineTo(to);
             ctx.EndFigure(false);
-            return new ArcResult(geometry, head, tail, startDir, endDir, new Point(lx, ly));
+            return new ArcResult(geometry, head, tail, tee, startDir, endDir, new Point(lx, ly));
         }
 
         switch (baseShape)
@@ -658,7 +672,7 @@ public class WaveDromPresenter : Control
                 break;
         }
 
-        return new ArcResult(geometry, head, tail, startDir, endDir, new Point(lx, ly));
+        return new ArcResult(geometry, head, tail, tee, startDir, endDir, new Point(lx, ly));
     }
 
     /// <summary>Draws a filled arrowhead/arrowtail marker at <paramref name="tip"/>.</summary>
@@ -680,6 +694,20 @@ public class WaveDromPresenter : Control
         }
 
         dc.DrawGeometry(new SolidColorBrush(ArcColor), null, geometry);
+    }
+
+    /// <summary>
+    /// Draws the SVG "tee" marker: a short stroke perpendicular to the edge
+    /// direction, used at both ends of a <c>+</c> edge.
+    /// </summary>
+    private void DrawTeeMarker(DrawingContext dc, Point tip, double direction)
+    {
+        const double half = 4;
+        var perp = direction + Math.PI / 2;
+        var a = new Point(tip.X - half * Math.Cos(perp), tip.Y - half * Math.Sin(perp));
+        var b = new Point(tip.X + half * Math.Cos(perp), tip.Y + half * Math.Sin(perp));
+        var pen = new Pen(new SolidColorBrush(ArcColor), 2);
+        dc.DrawLine(pen, a, b);
     }
 
     /// <summary>Draws an edge/node label with a white background box (render-label.js).</summary>

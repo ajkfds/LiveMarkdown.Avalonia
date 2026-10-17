@@ -31,6 +31,12 @@
 
 ## 完了済みタスク
 
+- WaveDrom の header/footer 横位置と `+` エッジの tee マーカーを修正
+    - head/foot テキストを公式 `render-marks.js` どおり波形領域中央
+      （`xg + xmax*xs/2`）に配置（従来は左ガター中央 `xg/2` で誤り）。
+    - tick を `i*mmstep`、tock を `i*mmstep + mmstep/2` に修正（従来は半ステップずれ）。
+    - `+` 形状エッジ（例: Step8 の `I+J 5 ms`）の両端に SVG "tee" マーカー
+      （エッジに垂直な短い縦線）を描画。従来は横線のみで縦線が欠落。
 - WaveDrom の Step8（node / edge の矢印）描画に対応
     - パーサ: レーンの `node` 文字列とトップレベルの `edge` 配列を `WaveDromDiagram`
       / `WaveDromLane` に取り込み。
