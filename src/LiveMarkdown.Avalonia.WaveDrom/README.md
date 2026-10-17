@@ -116,7 +116,8 @@ Markdown 内に ` ```wavedrom ` フェンスで WaveDrom の JSON（JavaScript �
 | ギャップ | `wave: "p.....|..."`（`|` はギャップ） |
 | head / foot | `text` / `tick` / `tock` / `every` / tspan リッチテキスト |
 | 矢印・エッジ | `node: '.a..j'` + `edge: ['a~b t1', 'c-~>d time 3', ...]` |
-| config | `hscale`, `marks` |
+| ギャップ | `gaps: "....|...."`（縦線・ブラケット `[`/`]`/`(`/`)` など） |
+| config | `hscale`, `marks`, `hbounds`, `arcFontSize` |
 
 ### 矢印（edge）の例
 
@@ -157,10 +158,8 @@ Markdown 内に ` ```wavedrom ` フェンスで WaveDrom の JSON（JavaScript �
 一部に未対応／近似の項目があります（詳細はリポジトリの `.agents/wavedrom-todo.md` 参照）。
 
 - スレーブ信号（`wave: "s..."`）
-- `config.hbounds` / `config.skin` / `config.ylines` などの一部オプション
-- `gaps` プロパティによる図形（ブラケット `[`/`]`/`(`/`)`・複数縦線など）
-- `phase` の小数値（半ブリック単位の近似）
-- default 以外のスキン（narrow / dark 等）の塗り色
+- `config.skin`（narrow / dark 等の他スキン。ブリック寸法が default と異なる）
+- default 以外のスキンの塗り色
 - 画面描画（ピクセル）の自動検証
 
 ## ライセンス

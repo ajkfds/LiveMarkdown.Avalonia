@@ -437,6 +437,71 @@ public class WaveDromPresenterTests
     }
 
     [Test]
+    public void Parser_AppliesFractionalPhase()
+    {
+        // phase 0.5 shifts by ceil(0.5)=1 half-brick and sets PhaseUnits=0.5.
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [ { name: "d", wave: "x.3x=x", phase: 0.5 } ] }
+            """);
+
+        var lane = diagram.Lanes[0];
+        Assert.That(lane.Phase, Is.EqualTo(0.5));
+        Assert.That(lane.PhaseBricks, Is.EqualTo(1.0));
+        Assert.That(lane.PhaseUnits, Is.EqualTo(0.5));
+    }
+
+    [Test]
+    public void Parser_AppliesHboundsAsPhaseAndMaxBricks()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [ { name: "d", wave: "p..........." } ],
+              config: { hbounds: [1, 3] } }
+            """);
+
+        var lane = diagram.Lanes[0];
+        // xmin_cfg = 2*1 = 2 half-bricks, xmax_cfg = 2*3 = 6 -> 4 visible bricks.
+        Assert.That(lane.PhaseBricks, Is.EqualTo(2.0));
+        Assert.That(lane.Bricks.Length, Is.EqualTo(4));
+    }
+
+    [Test]
+    public void Parser_ReadsArcFontSizeAndGaps()
+    {
+        var diagram = WaveDromParser.Parse(
+            """
+            { signal: [ { name: "a", wave: "p..." } ],
+              config: { arcFontSize: 14 },
+              gaps: "....|....|" }
+            """);
+
+        Assert.That(diagram.ArcFontSize, Is.EqualTo(14));
+        Assert.That(diagram.Gaps, Is.EqualTo("....|....|"));
+        Assert.That(diagram.LaneWaves, Is.EqualTo(new[] { "p..." }));
+    }
+
+    [Test]
+    public void Measure_GapsAndHboundsRenderWithoutThrowing()
+    {
+        var presenter = new WaveDromPresenter
+        {
+            Text = """
+                   { signal: [
+                     { name: "clk", wave: "p..........." },
+                     { name: "bus", wave: "x.3x=x.4.x", phase: 0.5 }
+                   ],
+                   config: { hscale: 1, hbounds: [0, 5], arcFontSize: 12 },
+                   gaps: "....|....|.." }
+                   """
+        };
+
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
+
+    [Test]
     public void Measure_EdgeDiagramRendersWithoutThrowing()
     {
         var presenter = new WaveDromPresenter

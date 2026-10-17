@@ -8,8 +8,10 @@
 ## 波形 / レーン
 
 - [ ] スレーブ信号（`wave: "s..."`）— バス内の複数行描画（render-slave 相当）
-- [~] `period` / `phase` の小数値対応
-      （`period` は数値対応。`phase` は `(int)(phase * 2)` による半ブリック単位の近似）
+      ※ 公式 JS にも専用の描画コードは存在しない（未実装）
+- [x] `period` / `phase` の小数値対応
+      （`phase` を `phase*2 + xmin_cfg` の half-brick 単位で保持し、公式の
+       `xoffset` 式で描画。`period` も数値対応）
 - [x] サブサイクル `<`/`>`（`ParseWaveLane` で `repeats - 1` を適用）
 - [x] `0mz`/`1mz`/`zmu` 等のソフトカーブ（ベジェ `C` 曲線）
       （`WaveDromSkin` に公式パスを移植し `SvgPathParser` で描画）
@@ -20,20 +22,21 @@
 
 - [x] `head`/`foot` の複数行テキスト（tspan 配列 / リッチテキスト、`ParseText`）
 - [x] `head.every` / `foot.every`（tick 間引き表示、`ExpandTick`）
-- [ ] `config.hbounds`（xmin/xmax による表示範囲制限）
+- [x] `config.hbounds`（xmin/xmax による表示範囲制限）
 - [ ] `config.skin` の切り替え（narrow / darker 等の他スキン）
-- [ ] `config.hscale` 以外の `config` オプション（`ylines`, `fontsize` 等）
-      ※ `config.marks` は対応済み。`hscale` は対応済み。
+      ※ 他スキンはブリック寸法（xs/ys）が default と異なるため未対応
+- [x] `config.arcFontSize`（エッジラベルのフォントサイズ）
+      ※ `config.marks` / `hscale` / `hbounds` も対応済み。
+      `ylines` / `fontsize` は公式 WaveDrom に存在しないオプションのため対象外。
 
 ## マーカー / エッジ
 
 - [x] `node` プロパティと `edge` 配列（信号間の矢印・ラベル線）
 - [x] `edge` の種類（`~`, `-~`, `~-`, `-|`, `|-`, `-|-`, `+`, `>`/`<` 矢印）と
       ラベル描画（`render-arcs.js` / `arc-shape.js` を移植）
-- [ ] `gaps` プロパティ（`render-gaps.js`）
-      ※ `wave` 内の `|` は `parse-wave-lane` のリピート（スペーサー）として消費するが、
-      公式が描く `#gap` 図形（ブラケット `[`/`]`/`(`/`)`・複数縦線 `1`/`2`/`3` 等・
-      バックドロップ）は未描画。`source.gaps` および `gaps: "s"` も未対応。
+- [x] `gaps` プロパティ（`render-gaps.js`）
+      （バックドロップ、縦線 `1`/`2`/`3`/`|`、角ブラケット `[`/`]`、丸ブラケット `(`/`)`、
+      信号ギャップマーカー `s` に対応）
 
 ## 描画品質
 

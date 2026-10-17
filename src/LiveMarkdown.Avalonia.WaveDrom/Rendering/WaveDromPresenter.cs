@@ -358,8 +358,14 @@ public class WaveDromPresenter : Control
                 DrawRightAlignedText(dc, lane.Name, typeface, InfoBrush, xg - 10, laneY + 8);
             }
 
-            var phaseOffset = lane.Phase != 0 ? (Math.Ceiling(2 * -lane.Phase) - 0) : 0;
-            var laneX = xg + lane.Phase * WaveDromParser.Xs;
+            // Official render-wave-lane.js x offset for the draw group:
+            //   units = phase + xmin_cfg/2
+            //   xoffset = units > 0 ? ceil(2*units) - 2*units : -2*units
+            var units = lane.PhaseUnits;
+            var xoffset = units > 0
+                ? Math.Ceiling(2 * units) - 2 * units
+                : -2 * units;
+            var laneX = xg + xoffset * WaveDromParser.Xs;
 
             for (var b = 0; b < lane.Bricks.Length; b++)
             {
@@ -378,6 +384,12 @@ public class WaveDromPresenter : Control
                     DrawMiddleAnchoredText(dc, label, typeface, TextBrush, labelX, laneY + WaveDromYm);
                 }
             }
+        }
+
+        // Gaps property (official render-gaps.js).
+        if (!string.IsNullOrEmpty(diagram.Gaps))
+        {
+            DrawGaps(dc, diagram, xg, lanesTop);
         }
 
         // Group brackets (official render-groups.js):
@@ -457,6 +469,136 @@ public class WaveDromPresenter : Control
     private const double WaveDromXlabel = 6;
     private const double WaveDromYm = 15;
 
+    /// <summary>
+    /// Draws the top-level <c>gaps</c> string, ported from the official
+    /// render-gaps.js: backdrops, vertical lines, square/round brackets, and the
+    /// 's' signal gap markers. The wave is scaled by hscale * xs * 2 per char.
+    /// </summary>
+    private void DrawGaps(DrawingContext dc, WaveDromDiagram diagram, double xg, double lanesTop)
+    {
+        var gaps = diagram.Gaps!.Trim();
+        if (gaps.Length == 0)
+        {
+            return;
+        }
+
+        var laneCount = diagram.Lanes.Length;
+        var lanesHeight = laneCount * WaveDromParser.Yo;
+        var scale = diagram.HScale * WaveDromParser.Xs * 2;
+        var linePen = new Pen(Brushes.Black, 1);
+        var backdropBrush = new SolidColorBrush(Color.FromArgb(0xCC, 0xFF, 0xFF, 0xFF));
+
+        void DrawVLine(double x)
+        {
+            dc.DrawLine(linePen, new Point(x, lanesTop), new Point(x, lanesTop + lanesHeight));
+        }
+
+        void DrawBackdrop(double width)
+        {
+            dc.DrawRectangle(backdropBrush, null, new Rect(xg - width / 2, lanesTop, width, lanesHeight));
+        }
+
+        var circlePen = new Pen(Brushes.Black, 1);
+        void DrawRect(double x, double y, double w, double h, double radius)
+        {
+            dc.DrawRectangle(null, linePen, new Rect(x, y, w, h), radius, radius);
+        }
+
+        for (var i = 0; i < gaps.Length; i++)
+        {
+            var c = gaps[i];
+            if (c == '.')
+            {
+                continue;
+            }
+
+            var offset = char.IsLower(c) ? 0.5 : 0.0;
+            var x = xg + scale * (i + offset);
+
+            switch (c)
+            {
+                case '0':
+                    DrawBackdrop(4);
+                    break;
+                case '1':
+                case '|':
+                    DrawBackdrop(4);
+                    DrawVLine(x);
+                    break;
+                case '2':
+                    DrawBackdrop(4);
+                    DrawVLine(x - 2);
+                    DrawVLine(x + 2);
+                    break;
+                case '3':
+                    DrawBackdrop(6);
+                    DrawVLine(x - 3);
+                    DrawVLine(x);
+                    DrawVLine(x + 3);
+                    break;
+                case '[':
+                    // Square left: M 2 0 h -4 v (h-1) h 4
+                    DrawRect(x - 2, lanesTop, 4, lanesHeight - 1, 0);
+                    break;
+                case ']':
+                    DrawRect(x - 2, lanesTop, 4, lanesHeight - 1, 0);
+                    break;
+                case '(':
+                    // Round left.
+                    DrawRoundBracket(dc, circlePen, x, lanesTop, lanesHeight, rightSide: false, doubleSide: false, outerOnly: false);
+                    break;
+                case ')':
+                    DrawRoundBracket(dc, circlePen, x, lanesTop, lanesHeight, rightSide: true, doubleSide: false, outerOnly: false);
+                    break;
+                case 's':
+                    for (var idx = 0; idx < laneCount; idx++)
+                    {
+                        if (idx < diagram.LaneWaves.Length && diagram.LaneWaves[idx].Length > i)
+                        {
+                            DrawGapGlyph(dc, xg + 2, lanesTop + 5 + WaveDromParser.Yo * idx - WaveDromParser.Y0);
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Draws a rounded gap bracket (approximation of the SVG arc brackets).</summary>
+    private static void DrawRoundBracket(
+        DrawingContext dc, IPen pen, double x, double top, double height, bool rightSide, bool doubleSide, bool outerOnly)
+    {
+        // Approximate the official a4 4 arc brackets with a rounded rectangle side.
+        var r = 4.0;
+        var geometry = new StreamGeometry();
+        using var ctx = geometry.Open();
+        var sign = rightSide ? -1.0 : 1.0;
+        var startX = x + sign * 2;
+        ctx.BeginFigure(new Point(startX, top), false);
+        ctx.CubicBezierTo(new Point(startX - sign * 2, top), new Point(startX - sign * 4, top + 2), new Point(startX - sign * 4, top + r));
+        ctx.LineTo(new Point(startX - sign * 4, top + height - r));
+        ctx.CubicBezierTo(
+            new Point(startX - sign * 4, top + height - 2),
+            new Point(startX - sign * 2, top + height),
+            new Point(startX, top + height));
+        ctx.EndFigure(false);
+        dc.DrawGeometry(null, pen, geometry);
+    }
+
+    /// <summary>Draws a small 'gap' glyph (used by the 's' gaps marker).</summary>
+    private void DrawGapGlyph(DrawingContext dc, double x, double y)
+    {
+        if (WaveDromSkin.Bricks.TryGetValue("gap", out var parts))
+        {
+            using var _ = dc.PushTransform(Matrix.CreateTranslation(x, y));
+            foreach (var part in parts)
+            {
+                var geometry = GetCachedBrickGeometry("gap", part.Data);
+                var (brush, pen) = ResolveStyle(part.Class);
+                dc.DrawGeometry(brush, pen, geometry);
+            }
+        }
+    }
+
     // Official render-arcs.js arrow color.
     private static readonly Color ArcColor = Color.FromRgb(0x00, 0x41, 0xC4);
 
@@ -486,7 +628,8 @@ public class WaveDromPresenter : Control
             }
 
             var period = lane.Period;
-            var phase2 = lane.Phase * 2;
+            // Official render-arcs.js uses lane.phase (= phase*2 + xmin_cfg).
+            var phase2 = lane.PhaseBricks;
             var laneRowY = i * WaveDromParser.Yo + WaveDromParser.Y0 + WaveDromParser.Ys * 0.5;
 
             for (var pos = 0; pos < node.Length; pos++)
@@ -503,7 +646,7 @@ public class WaveDromPresenter : Control
         }
 
         var arcPen = new Pen(new SolidColorBrush(ArcColor), 1);
-        var arcFontSize = 11d;
+        var arcFontSize = diagram.ArcFontSize;
 
         foreach (var edge in diagram.Edges)
         {

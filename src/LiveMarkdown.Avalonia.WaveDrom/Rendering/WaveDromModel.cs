@@ -64,6 +64,17 @@ public sealed class WaveDromDiagram
     /// <c>edge</c> array. Rendered as arcs/arrows between signal nodes.
     /// </summary>
     public required string[] Edges { get; init; }
+
+    /// <summary>Arc/edge label font size (config.arcFontSize), default 11.</summary>
+    public required double ArcFontSize { get; init; }
+
+    /// <summary>
+    /// Raw <c>gaps</c> string (e.g. <c>"....|..|"</c>) drawn by render-gaps.js.
+    /// </summary>
+    public required string? Gaps { get; init; }
+
+    /// <summary>Raw per-lane wave strings, needed by render-gaps.js ('s' marker).</summary>
+    public required string[] LaneWaves { get; init; }
 }
 
 /// <summary>
@@ -75,6 +86,21 @@ public sealed class WaveDromLane
     public string Name { get; init; } = string.Empty;
     public int Period { get; init; } = 1;
     public double Phase { get; init; }
+
+    /// <summary>Raw wave string (e.g. "p...."), used by gaps 's' markers.</summary>
+    public string Wave { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Effective phase in half-bricks including any config.hbounds xmin offset
+    /// (official lane.phase = phase*2 + xmin_cfg). May be fractional.
+    /// </summary>
+    public double PhaseBricks { get; init; }
+
+    /// <summary>
+    /// X translation units for the lane draw group (official render-wave-lane.js
+    /// tmp0[1] = phase + xmin_cfg/2).
+    /// </summary>
+    public double PhaseUnits { get; init; }
     public required string[] Bricks { get; init; }
     public required string?[] Labels { get; init; }
 
@@ -127,24 +153,50 @@ public static class WaveDromParser
             throw new FormatException("WaveDrom source must be a JSON object.");
         }
 
+        var config = root.TryGetProperty("config", out var configEl) && configEl.ValueKind == JsonValueKind.Object
+            ? configEl
+            : default;
+
         var hScale = 1;
-        if (root.TryGetProperty("config", out var config) && config.ValueKind == JsonValueKind.Object)
+        if (config.ValueKind == JsonValueKind.Object &&
+            config.TryGetProperty("hscale", out var hscale) && hscale.ValueKind == JsonValueKind.Number)
         {
-            if (config.TryGetProperty("hscale", out var hscale) && hscale.ValueKind == JsonValueKind.Number)
-            {
-                hScale = Math.Max(1, hscale.GetInt32());
-            }
+            // Official parse-config.js: round, clamp to [1, 100].
+            hScale = Math.Clamp((int)Math.Round(hscale.GetDouble()), 1, 100);
         }
 
         var showMarks = true;
-        if (root.TryGetProperty("config", out var config2) && config2.ValueKind == JsonValueKind.Object)
+        if (config.ValueKind == JsonValueKind.Object &&
+            config.TryGetProperty("marks", out var marks) &&
+            (marks.ValueKind == JsonValueKind.False ||
+             (marks.ValueKind == JsonValueKind.String && marks.GetString() == "false")))
         {
-            if (config2.TryGetProperty("marks", out var marks) &&
-                (marks.ValueKind == JsonValueKind.False ||
-                 (marks.ValueKind == JsonValueKind.String && marks.GetString() == "false")))
+            showMarks = false;
+        }
+
+        // config.hbounds -> xmin/2, xmax/2 limits (in ticks). Applied per lane as
+        // a phase offset (xmin) and a maximum brick count (xmax_cfg - xmin_cfg).
+        var xMinCfg = 0;
+        var xMaxCfg = int.MaxValue;
+        if (config.ValueKind == JsonValueKind.Object &&
+            config.TryGetProperty("hbounds", out var hbounds) &&
+            hbounds.ValueKind == JsonValueKind.Array &&
+            hbounds.GetArrayLength() == 2)
+        {
+            var lo = hbounds[0].ValueKind == JsonValueKind.Number ? (int)Math.Floor(hbounds[0].GetDouble()) : 0;
+            var hi = hbounds[1].ValueKind == JsonValueKind.Number ? (int)Math.Ceiling(hbounds[1].GetDouble()) : 0;
+            if (lo < hi)
             {
-                showMarks = false;
+                xMinCfg = 2 * lo;
+                xMaxCfg = 2 * hi;
             }
+        }
+
+        var arcFontSize = 11d;
+        if (config.ValueKind == JsonValueKind.Object &&
+            config.TryGetProperty("arcFontSize", out var arcSize) && arcSize.ValueKind == JsonValueKind.Number)
+        {
+            arcFontSize = arcSize.GetDouble();
         }
 
         var lanes = new List<WaveDromLane>();
@@ -152,7 +204,7 @@ public static class WaveDromParser
 
         if (root.TryGetProperty("signal", out var signal) && signal.ValueKind == JsonValueKind.Array)
         {
-            ParseSignal(signal, lanes, groups, hScale);
+            ParseSignal(signal, lanes, groups, hScale, xMinCfg, xMaxCfg);
         }
 
         var xMax = Math.Max(lanes.Count > 0 ? lanes.Max(l => l.Bricks.Length) : 1, 1);
@@ -194,7 +246,12 @@ public static class WaveDromParser
             ShowMarks = showMarks,
             HScale = hScale,
             XMax = xMax,
-            Edges = edges
+            Edges = edges,
+            ArcFontSize = arcFontSize,
+            Gaps = root.TryGetProperty("gaps", out var gapsEl) && gapsEl.ValueKind == JsonValueKind.String
+                ? gapsEl.GetString()
+                : null,
+            LaneWaves = [.. lanes.Select(l => l.Wave)]
         };
     }
 
@@ -576,15 +633,25 @@ public static class WaveDromParser
         public int Y;
         public int Depth;
         public string? Name;
+        public int HScale;
+        public int XMinCfg;
+        public int XMaxCfg;
     }
 
     private static void ParseSignal(
         JsonElement signal,
         List<WaveDromLane> lanes,
         List<WaveDromGroup> groups,
-        int hScale)
+        int hScale,
+        int xMinCfg,
+        int xMaxCfg)
     {
-        var state = new RecState();
+        var state = new RecState
+        {
+            HScale = hScale,
+            XMinCfg = xMinCfg,
+            XMaxCfg = xMaxCfg
+        };
         Rec(signal.EnumerateArray().ToArray(), null, false, state, lanes, groups, hScale);
     }
 
@@ -670,7 +737,7 @@ public static class WaveDromParser
                 continue;
             }
 
-            lanes.Add(ParseLane(item, state.Depth, state.X, hScale));
+            lanes.Add(ParseLane(item, state.Depth, state.X, state));
             state.Y += 1;
         }
 
@@ -680,7 +747,7 @@ public static class WaveDromParser
         state.Name = name;
     }
 
-    private static WaveDromLane ParseLane(JsonElement entry, int level, int xOffset, int hScale)
+    private static WaveDromLane ParseLane(JsonElement entry, int level, int xOffset, RecState state)
     {
         var period = entry.TryGetProperty("period", out var periodElement) &&
                      periodElement.ValueKind == JsonValueKind.Number
@@ -700,7 +767,23 @@ public static class WaveDromParser
             ? ParseData(dataElement)
             : [];
 
-        var (bricks, unseenMarkers) = ParseWaveLane(wave, (int)(period * hScale - 1), (int)(phase * 2));
+        // Official parse-wave-lanes.js:
+        //   lane.phase  = phase*2 + xmin_cfg   (half-brick offset incl. hbounds)
+        //   tmp0[1]     = phase + xmin_cfg/2   (draw-group x translation units)
+        //   extra       = period*hscale - 1
+        var phaseBricks = phase * 2 + state.XMinCfg;
+        var phaseUnits = phase + state.XMinCfg / 2.0;
+        var (bricks, unseenMarkers) = ParseWaveLane(wave, (int)(period * state.HScale - 1), phaseBricks);
+
+        // render-wave-lane.js clamps visible bricks to xmax_cfg - xmin_cfg.
+        var visibleMax = state.XMaxCfg == int.MaxValue
+            ? int.MaxValue
+            : Math.Max(0, state.XMaxCfg - state.XMinCfg);
+        if (bricks.Length > visibleMax)
+        {
+            bricks = bricks[..visibleMax];
+        }
+
         var labels = data.Skip(unseenMarkers).ToArray();
 
         return new WaveDromLane
@@ -711,6 +794,9 @@ public static class WaveDromParser
                 : string.Empty,
             Period = (int)period,
             Phase = phase,
+            Wave = wave,
+            PhaseBricks = phaseBricks,
+            PhaseUnits = phaseUnits,
             Bricks = bricks,
             Labels = [.. labels],
             GroupLevel = level,
@@ -901,7 +987,7 @@ public static class WaveDromParser
     }
 
     // Port of parse-wave-lane.js
-    private static (string[] bricks, int unseenMarkers) ParseWaveLane(string src, int extra, int phase)
+    private static (string[] bricks, int unseenMarkers) ParseWaveLane(string src, int extra, double phase)
     {
         if (string.IsNullOrEmpty(src))
         {

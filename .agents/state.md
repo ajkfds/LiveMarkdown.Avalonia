@@ -31,6 +31,16 @@
 
 ## 完了済みタスク
 
+- WaveDrom の描画品質・検証以外の未対応項目を実装
+    - **phase の小数対応**: `phase * 2 + xmin_cfg` を half-brick 単位で保持し、
+      描画の x オフセットを公式どおり
+      `units = phase + xmin/2; xoffset = units > 0 ? ceil(2*units) - 2*units : -2*units` で算出。
+    - **config.hbounds**: `xmin_cfg = 2*floor(lo)`, `xmax_cfg = 2*ceil(hi)` を
+      レーンの phase オフセットと可視ブリック上限（`xmax_cfg - xmin_cfg`）に適用。
+    - **config.arcFontSize**: エッジラベルのフォントサイズに反映（既定 11）。
+    - **gaps プロパティ**: 公式 `render-gaps.js` を移植。バックドロップ、縦線（`1`/`2`/`3`）、
+      角ブラケット `[`/`]`、丸ブラケット `(`/`)`、信号ギャップ `s` を描画。
+    - 上記の回帰テストを追加。
 - WaveDrom の head/foot tspan の横間隔を修正
     - SVG は `xml:space="preserve"` で tspan 間の末尾スペースを保持するが、
       `FormattedText.Width` は末尾空白を除外するため要素間が詰まっていた。
