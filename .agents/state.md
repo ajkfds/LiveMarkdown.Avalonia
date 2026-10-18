@@ -6,6 +6,20 @@
 
 - なし（WaveDrom プラグインの描画改善は一段落。ビルド成功・テスト全 190 件グリーン）
 
+### 直近の修正（ビルド不通の解消）
+
+- 症状: ソリューション（`LiveMarkdown.Avalonia.sln`）経由のビルドが失敗し、
+  `src/LiveMarkdown.Avalonia.Demo/LiveMarkdown.Avalonia.Demo.Desktop` がコンパイルできない。
+- 原因: ソリューションがリポジトリ外の存在しないプロジェクト
+  `..\ClassicDiagnostics.Avalonia\src\ClassicDiagnostics.Avalonia.csproj`
+  （GUID `{361D2903-C16B-42A8-9AD7-5774D5CC890A}`）を参照しており、
+  `MSB3202: プロジェクト ファイル ... が見つかりませんでした` で全体ビルドが停止していた。
+- 対応: 上記の孤立した Project エントリおよび `ProjectConfigurationPlatforms` /
+  `NestedProjects` の関連行を `LiveMarkdown.Avalonia.sln` から削除。
+- 結果: Desktop 単体・Demo 本体ともにビルド成功（0 エラー）。
+  なお Android/iOS プロジェクトはワークロード未インストールのため、環境依存で
+  ソリューション一括ビルドには `android`/`ios` ワークロードが必要（コードの問題ではない）。
+
 ## 現在の状態サマリ
 
 - ブランチ: `main`（origin/main より多数コミット先行）
