@@ -4,3 +4,6 @@
 [submodule "wavedrom"]
 	path = wavedrom
 	url = https://github.com/wavedrom/wavedrom.git
+[submodule "src/LiveMarkdown.Avalonia.WaveDrom"]
+	path = src/LiveMarkdown.Avalonia.WaveDrom
+	url = https://github.com/ajkfds/LiveMarkdown.Avalonia.WaveDrom.git
