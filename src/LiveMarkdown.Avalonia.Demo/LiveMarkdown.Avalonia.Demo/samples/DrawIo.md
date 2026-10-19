@@ -207,6 +207,71 @@ and rendered natively, without a JavaScript runtime or WebView.
 </mxGraphModel>
 ```
 
+## Flowchart & logic shapes
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="term" value="Terminator" style="shape=terminator;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="40" y="40" width="120" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="pre" value="Predefined" style="shape=predefinedProcess;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="200" y="40" width="140" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="seq" value="Sequential data" style="shape=sequential_data;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="380" y="40" width="140" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="stored" value="Stored data" style="shape=stored_data;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="560" y="40" width="150" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="multi" value="Multi-document" style="shape=multi-document;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;boundedLbl=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="150" width="140" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="manual" value="Manual op" style="shape=manual_operation;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="220" y="150" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="merge" value="Merge" style="shape=merge_or_storage;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="400" y="150" width="120" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="folder" value="Folder" style="shape=folder;whiteSpace=wrap;html=1;tabWidth=60;tabHeight=14;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="560" y="150" width="150" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="star" value="Star" style="shape=star;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="40" y="270" width="80" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="oct" value="Octagon" style="shape=octagon;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="150" y="270" width="90" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="pent" value="Pentagon" style="shape=pentagon;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="270" y="270" width="90" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="cross" value="Cross" style="shape=cross2;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="390" y="270" width="80" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="tee" value="Tee" style="shape=tee;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="500" y="270" width="80" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="ortri" value="" style="shape=orthogonal_triangle;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="610" y="270" width="80" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="or" value="" style="shape=or;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="40" y="390" width="90" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="and" value="" style="shape=and;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="170" y="390" width="90" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="xor" value="" style="shape=xor;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="300" y="390" width="90" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="decision" value="Decision" style="shape=mxgraph.flowchart.decision;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="430" y="380" width="100" height="90" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Labels with placeholders and markup
 
 ```drawio
