@@ -101,6 +101,28 @@ public class DrawIoEdgeMarkerTests
     }
 
     [Test]
+    public void LineInset_IsPositiveForFilledMarkersAndZeroForOpen()
+    {
+        // Filled markers need the line shortened so it stops at their base;
+        // open markers don't cover the line, so no inset.
+        Assert.That(DrawIoEdgeMarker.LineInset("classic", 10, 2), Is.GreaterThan(0));
+        Assert.That(DrawIoEdgeMarker.LineInset("block", 10, 2), Is.GreaterThan(0));
+        Assert.That(DrawIoEdgeMarker.LineInset("diamond", 10, 2), Is.GreaterThan(0));
+
+        // "none" has no marker at all.
+        Assert.That(DrawIoEdgeMarker.LineInset("none", 10, 2), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void LineInset_ClassicIsShorterThanBlock()
+    {
+        // classic only shortens to 3/4 of the arrow length; block to full.
+        var classic = DrawIoEdgeMarker.LineInset("classic", 10, 2);
+        var block = DrawIoEdgeMarker.LineInset("block", 10, 2);
+        Assert.That(classic, Is.LessThan(block));
+    }
+
+    [Test]
     public void ClassicMarker_PointsBackAlongTheEdge()
     {
         _session.Dispatch(() =>
