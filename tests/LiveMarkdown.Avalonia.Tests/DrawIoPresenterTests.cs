@@ -268,6 +268,68 @@ public class DrawIoPresenterTests
     }
 
     [Test]
+    public void Measure_VertexWithoutColorsStillProducesBox()
+    {
+        // The circuit sample's component blocks specify no fillColor/strokeColor,
+        // which must fall back to draw.io's default white fill + black stroke,
+        // i.e. the block frame must still be drawn with a positive size.
+        var presenter = new DrawIoPresenter
+        {
+            Text = """
+                   <mxGraphModel>
+                     <root>
+                       <mxCell id="0" />
+                       <mxCell id="1" parent="0" />
+                       <object label="%InstanceName%" InstanceName="MODULE0_0" placeholders="1" id="box">
+                         <mxCell style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;container=1;" vertex="1" parent="1">
+                           <mxGeometry x="120" y="320" width="220" height="150" as="geometry" />
+                         </mxCell>
+                       </object>
+                     </root>
+                   </mxGraphModel>
+                   """
+        };
+
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(220));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(150));
+    }
+
+    [Test]
+    public void Measure_CircuitSampleRendersWithoutThrowing()
+    {
+        var presenter = new DrawIoPresenter
+        {
+            Text = """
+                   <mxfile host="Electron" version="27.0.9">
+                     <diagram name="p" id="d">
+                       <mxGraphModel>
+                         <root>
+                           <mxCell id="0" />
+                           <mxCell id="1" parent="0" />
+                           <object label="%InstanceName%" InstanceName="MODULE0_0" placeholders="1" id="box">
+                             <mxCell style="rounded=0;whiteSpace=wrap;html=1;verticalLabelPosition=top;align=left;verticalAlign=bottom;fontStyle=1;strokeWidth=2;container=1;fontSize=14;" vertex="1" parent="1">
+                               <mxGeometry x="120" y="320" width="220" height="150" as="geometry" />
+                             </mxCell>
+                           </object>
+                           <object label="%Name%" Name="CLK_I" placeholders="1" id="port">
+                             <mxCell style="verticalLabelPosition=middle;verticalAlign=middle;shape=mxgraph.basic.polygon;polyCoords=[[0,0.25],[0.75,0.25],[1,0.5],[0.75,0.75],[0,0.75]];polyline=0;strokeWidth=2;align=left;labelPosition=right;spacing=8;resizable=0;" parent="box" vertex="1">
+                               <mxGeometry y="110" width="20" height="20" as="geometry" />
+                             </mxCell>
+                           </object>
+                         </root>
+                       </mxGraphModel>
+                     </diagram>
+                   </mxfile>
+                   """
+        };
+
+        Assert.DoesNotThrow(() => presenter.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)));
+        Assert.That(presenter.DesiredSize.Width, Is.GreaterThan(0));
+        Assert.That(presenter.DesiredSize.Height, Is.GreaterThan(0));
+    }
+
+    [Test]
     public void Measure_InvalidDiagramDoesNotThrow()
     {
         var presenter = new DrawIoPresenter { Text = "not xml" };
