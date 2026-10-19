@@ -25,15 +25,16 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 258 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 263 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
-    - DrawIo 関連は 4 フィクスチャ:
+    - DrawIo 関連は 5 フィクスチャ:
         - `DrawIoPresenterTests`（24 件、プラットフォーム不要）
-        - `DrawIoShapeGeometryTests`（19 件、ヘッドレス）
+        - `DrawIoShapeGeometryTests`（20 件、ヘッドレス）
         - `DrawIoEdgeMarkerTests`（7 件、ヘッドレス）
         - `DrawIoTextLayoutTests`（6 件、ヘッドレス）
+        - `DrawIoStructureTests`（4 件、プラットフォーム不要）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -76,6 +77,11 @@
       `entityRelationEdgeStyle`/`elbowEdgeStyle` を追加。`rounded=1`（角丸、`arcSize`）・
       `curved=1`（曲線）配線、`jumpStyle=arc`/`jumpSize`（交差ジャンプ、`TryIntersect` で交点検出）
       を実装。`BuildEdgeGeometry` にジャンプ挿入を統合。
+    - **項目6（構造・ページ）対応**: `PageIndex` プロパティで複数ページ選択、
+      `visible="0"`(非表示セル)・`collapsed`(折りたたみコンテナの子孫)をスキップ、
+      レイヤー検出（`LayerIds`/`LayerId`）、`dx`/`dy` の読み取りを実装。
+    - **項目3（画像セル）対応**: `shape=image` / `image=data:image/...`（data URI）の
+      画像セルを `Bitmap` でデコードして描画。読み込み失敗時は図形へフォールバック。
     - 回路サンプル（Circuit）対応のフォローアップ:
         - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
           各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。
