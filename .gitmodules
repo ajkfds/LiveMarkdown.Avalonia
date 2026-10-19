@@ -10,3 +10,6 @@
 [submodule "drawio"]
 	path = drawio
 	url = https://github.com/ajkfds/drawio.git
+[submodule "src/LiveMarkdown.Avalonia.DrawIo"]
+	path = src/LiveMarkdown.Avalonia.DrawIo
+	url = https://github.com/ajkfds/LiveMarkdown.Avalonia.DrawIo.git
