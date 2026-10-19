@@ -25,11 +25,11 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 217 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 221 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
-    - DrawIo 関連は `DrawIoPresenterTests`（15 件、プラットフォーム不要）
+    - DrawIo 関連は `DrawIoPresenterTests`（19 件、プラットフォーム不要）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -50,6 +50,21 @@
 - DrawIo プラグイン (`src/LiveMarkdown.Avalonia.DrawIo`) を新規追加
     - WaveDrom プラグインと同構成で、` ```drawio ` フェンスを Markdig で検出し、
       埋め込まれた draw.io (mxGraph) XML をネイティブ描画する Avalonia プラグイン。
+    - 回路サンプル（Circuit）対応のフォローアップ:
+        - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
+          各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。
+        - **エッジの接続経路修正**: ソース/ターゲットを頂点中心ではなく
+          `exitX/exitY`・`entryX/entryY` のパーセント接続点で解決し、
+          `orthogonalEdgeStyle` かつ waypoint 未指定のときは中間 X で直交ベンドを合成。
+        - **矢印の先端修正**: `endArrow=classic`（既定）で塗りつぶし矢じりを描画。
+          太さ連動のサイズにし、`open` は線のみとした（従来は既定で `classic` 判定でも
+          頂点中心が端点となり矢じりが頂点に隠れていた）。
+        - **`%Placeholder%` の親チェーン解決**: draw.io の `replacePlaceholders` と同様に
+          親セルを辿って属性を解決（子ラベルの `%ModuleName%` が親コンテナの
+          `ModuleName` を参照できるように）。
+        - **既定の塗り/枠線**: 色未指定時は draw.io 既定の白塗り・黒枠。
+          `light-dark(a, b)` / `var(--x, fallback)` の色形式にも対応。
+        - **`labelPosition=left/right`**: 形状の外側に左右ラベルを配置。
     - `DrawIoCodeBlock` / `DrawIoBlockParser` / `DrawIoExtension` / `UseDrawIo()` /
       `DrawIoBlockNode`（フェンス未閉鎖時はソースをテキスト表示、閉鎖後に図を描画）。
     - モデル (`Model/`):

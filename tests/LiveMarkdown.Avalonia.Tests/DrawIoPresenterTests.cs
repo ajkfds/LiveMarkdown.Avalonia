@@ -116,6 +116,32 @@ public class DrawIoPresenterTests
     }
 
     [Test]
+    public void PolyCoords_ParsesAllCoordinatePairs()
+    {
+        // Regression: the second component of each pair used to be dropped
+        // because the pending number was not flushed at the closing bracket.
+        var coords = DrawIoShapeGeometry.ParsePolyCoords(
+            "[[0,0.25],[0.75,0.25],[1,0.5],[0.75,0.75],[0,0.75]]");
+
+        Assert.That(coords, Has.Count.EqualTo(5));
+        Assert.That(coords[0], Is.EqualTo(new[] { 0.0, 0.25 }));
+        Assert.That(coords[1], Is.EqualTo(new[] { 0.75, 0.25 }));
+        Assert.That(coords[2], Is.EqualTo(new[] { 1.0, 0.5 }));
+        Assert.That(coords[3], Is.EqualTo(new[] { 0.75, 0.75 }));
+        Assert.That(coords[4], Is.EqualTo(new[] { 0.0, 0.75 }));
+    }
+
+    [Test]
+    public void PolyCoords_ParsesNegativeAndDecimalValues()
+    {
+        var coords = DrawIoShapeGeometry.ParsePolyCoords("[[-0.5,1.25],[2,-0.75]]");
+
+        Assert.That(coords, Has.Count.EqualTo(2));
+        Assert.That(coords[0], Is.EqualTo(new[] { -0.5, 1.25 }));
+        Assert.That(coords[1], Is.EqualTo(new[] { 2.0, -0.75 }));
+    }
+
+    [Test]
     public void Parser_DecodesCompressedDiagramPayload()
     {
         const string xml = "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>" +
