@@ -25,14 +25,14 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 239 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 249 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
     - DrawIo 関連は 3 フィクスチャ:
         - `DrawIoPresenterTests`（24 件、プラットフォーム不要）
-        - `DrawIoShapeGeometryTests`（8 件、ヘッドレス）
-        - `DrawIoEdgeMarkerTests`（5 件、ヘッドレス）
+        - `DrawIoShapeGeometryTests`（16 件、ヘッドレス）
+        - `DrawIoEdgeMarkerTests`（7 件、ヘッドレス）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -63,7 +63,11 @@
       `halfCircle`/`dash`/`baseDash`/`cross`/`circle`/`circlePlus`/`doubleBlock` と ER 系
       (`ERone`/`ERmandOne`/`ERmany`/`ERoneToMany`/`ERzeroToOne`/`ERzeroToMany`) を描画。
       `startFill`/`endFill`/`startSize`/`endSize` に対応。マーカーは `Geometry` として構築し
-      ヘッドレスでテスト可能。
+      ヘッドレスでテスト可能。線分はマーカー根元で短縮（`LineInset`）。
+    - **項目3（図形の変形・効果）対応**: `rotation`（セル中心まわり）・`flipH`/`flipV`・
+      `gradientColor`（縦グラデーション）・`opacity`/`fillOpacity`/`strokeOpacity`・
+      `shadow`・`glass`・`dashPattern`（カスタム破線）を実装。`ShapeTransform` を draw.io の
+      `mxSvgCanvas2D.rotate` に合わせて移植。
     - 回路サンプル（Circuit）対応のフォローアップ:
         - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
           各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。

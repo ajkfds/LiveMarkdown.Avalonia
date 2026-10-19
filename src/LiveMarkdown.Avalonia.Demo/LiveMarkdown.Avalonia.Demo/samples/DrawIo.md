@@ -30,6 +30,38 @@ and rendered natively, without a JavaScript runtime or WebView.
 </mxfile>
 ```
 
+## Shape effects
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="rot" value="Rotated 45°" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;rotation=45;" vertex="1" parent="1">
+      <mxGeometry x="80" y="60" width="120" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="flip" value="Flipped" style="triangle;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;flipH=1;" vertex="1" parent="1">
+      <mxGeometry x="280" y="60" width="80" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="grad" value="Gradient" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;gradientColor=#6c8ebf;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="420" y="60" width="120" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="shad" value="Shadow" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="80" y="180" width="120" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="glass" value="Glass" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;glass=1;" vertex="1" parent="1">
+      <mxGeometry x="280" y="180" width="120" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="op" value="Opacity" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=50;" vertex="1" parent="1">
+      <mxGeometry x="420" y="180" width="120" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="dash" value="Dashed" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6c8ebf;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
+      <mxGeometry x="80" y="300" width="160" height="60" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Connected flow
 
 ```drawio

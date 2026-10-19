@@ -219,6 +219,63 @@ public class DrawIoShapeGeometryTests
     }
 
     [Test]
+    public void Style_ResolvesFillWithOpacityAndGradient()
+    {
+        // Opacity accepts both 0..1 and 0..100 forms.
+        var style = DrawIoStyle.Parse("fillColor=#ff0000;fillOpacity=50;");
+        var brush = DrawIoPresenter.ResolveFillBrushForTest(style);
+        Assert.That(brush, Is.InstanceOf<ISolidColorBrush>());
+        var solid = (ISolidColorBrush)brush;
+        Assert.That(solid.Color.R, Is.EqualTo(0xFF));
+        Assert.That(solid.Color.A, Is.EqualTo(128).Within(1));
+
+        var gradient = DrawIoStyle.Parse("fillColor=#ffffff;gradientColor=#000000;");
+        var brush2 = DrawIoPresenter.ResolveFillBrushForTest(gradient);
+        Assert.That(brush2, Is.InstanceOf<LinearGradientBrush>());
+    }
+
+    [Test]
+    public void Style_NoneFillYieldsTransparent()
+    {
+        var style = DrawIoStyle.Parse("fillColor=none;");
+        var brush = DrawIoPresenter.ResolveFillBrushForTest(style);
+        Assert.That(brush, Is.InstanceOf<ISolidColorBrush>());
+        Assert.That(((ISolidColorBrush)brush).Color.A, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Style_ResolvesCustomDashPattern()
+    {
+        var style = DrawIoStyle.Parse("dashed=1;dashPattern=1 2;");
+        Assert.That(DrawIoPresenter.ResolveDashPatternForTest(style), Is.EqualTo(new[] { 1.0, 2.0 }));
+
+        var fallback = DrawIoStyle.Parse("dashed=1;");
+        Assert.That(DrawIoPresenter.ResolveDashPatternForTest(fallback), Is.EqualTo(new[] { 3.0, 3.0 }));
+    }
+
+    [Test]
+    public void ShapeTransform_AppliesRotationAroundCenter()
+    {
+        var bounds = new Rect(0, 0, 100, 50);
+
+        // 180 degrees maps the top-left corner to the bottom-right.
+        var matrix = DrawIoPresenter.ShapeTransformForTest(bounds, 180, false, false);
+        var topLeft = matrix.Transform(new Point(0, 0));
+        Assert.That(topLeft.X, Is.EqualTo(100).Within(0.001));
+        Assert.That(topLeft.Y, Is.EqualTo(50).Within(0.001));
+    }
+
+    [Test]
+    public void ShapeTransform_FlipHMirrorsHorizontally()
+    {
+        var bounds = new Rect(0, 0, 100, 50);
+        var matrix = DrawIoPresenter.ShapeTransformForTest(bounds, 0, flipH: true, flipV: false);
+        var topLeft = matrix.Transform(new Point(0, 0));
+        Assert.That(topLeft.X, Is.EqualTo(100).Within(0.001));
+        Assert.That(topLeft.Y, Is.EqualTo(0).Within(0.001));
+    }
+
+    [Test]
     public void Process_HasFullBoundingBox()
     {
         _session.Dispatch(() =>
