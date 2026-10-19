@@ -1,4 +1,4 @@
-﻿# draw.io Rendering
+# draw.io Rendering
 
 draw.io (mxGraph) diagrams embedded as XML inside ` ```drawio ` fences are parsed
 and rendered natively, without a JavaScript runtime or WebView.
@@ -65,6 +65,53 @@ and rendered natively, without a JavaScript runtime or WebView.
     <mxCell id="1" parent="0" />
     <mxCell id="p" value="Polygon" style="shape=mxgraph.basic.polygon;polyCoords=[[0,0.25],[0.75,0.25],[1,0.5],[0.75,0.75],[0,0.75]];polyline=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
       <mxGeometry x="60" y="60" width="200" height="120" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
+## Basic shapes
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="r" value="Rhombus" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="40" y="40" width="100" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="h" value="Hexagon" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="170" y="40" width="120" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="p" value="Parallelogram" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="320" y="40" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="t" value="Trapezoid" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="490" y="40" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="s" value="Step" style="shape=step;perimeter=stepPerimeter;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="40" y="150" width="160" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="c" value="Cylinder" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="230" y="150" width="90" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="cl" value="Cloud" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;perimeter=cloudPerimeter;" vertex="1" parent="1">
+      <mxGeometry x="350" y="150" width="140" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="a" value="Actor" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+      <mxGeometry x="530" y="130" width="40" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="d" value="Document" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="40" y="280" width="140" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="n" value="Note" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;" vertex="1" parent="1">
+      <mxGeometry x="210" y="280" width="100" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="ca" value="Callout" style="shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="340" y="280" width="140" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="cb" value="Cube" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;" vertex="1" parent="1">
+      <mxGeometry x="510" y="280" width="130" height="90" as="geometry" />
     </mxCell>
   </root>
 </mxGraphModel>
