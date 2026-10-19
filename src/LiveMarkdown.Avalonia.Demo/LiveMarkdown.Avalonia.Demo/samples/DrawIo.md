@@ -62,6 +62,38 @@ and rendered natively, without a JavaScript runtime or WebView.
 </mxGraphModel>
 ```
 
+## Edge routing
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="a" value="A" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="40" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="b" value="B" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="260" y="160" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="c" value="C" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="480" y="40" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="e1" value="orthogonal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;" edge="1" parent="1" source="a" target="b">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e2" value="rounded" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;endArrow=classic;" edge="1" parent="1" source="b" target="c">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e3" value="curved" style="curved=1;html=1;endArrow=open;" edge="1" parent="1" source="a" target="c">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e4" value="ER" style="edgeStyle=entityRelationEdgeStyle;html=1;endArrow=ERmany;" edge="1" parent="1" source="b" target="c">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Labels
 
 ```drawio

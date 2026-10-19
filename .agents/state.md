@@ -25,13 +25,13 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 255 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 258 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
     - DrawIo 関連は 4 フィクスチャ:
         - `DrawIoPresenterTests`（24 件、プラットフォーム不要）
-        - `DrawIoShapeGeometryTests`（16 件、ヘッドレス）
+        - `DrawIoShapeGeometryTests`（19 件、ヘッドレス）
         - `DrawIoEdgeMarkerTests`（7 件、ヘッドレス）
         - `DrawIoTextLayoutTests`（6 件、ヘッドレス）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
@@ -72,6 +72,10 @@
     - **項目4（テキスト・ラベル）対応**: `DrawIoTextLayout` を追加。`fontStyle` の斜体(2)・
       下線(4)、`whiteSpace=wrap` の自動折り返し（長い単語は強制分割）、縦書き (`horizontal=0`)、
       ラベル背景 (`labelBackgroundColor`)、`verticalAlign` の top/bottom 配置を実装。
+    - **項目5（エッジ）対応**: 直交ルーティングをアンカー方向（水平/垂直/混合）で分岐、
+      `entityRelationEdgeStyle`/`elbowEdgeStyle` を追加。`rounded=1`（角丸、`arcSize`）・
+      `curved=1`（曲線）配線、`jumpStyle=arc`/`jumpSize`（交差ジャンプ、`TryIntersect` で交点検出）
+      を実装。`BuildEdgeGeometry` にジャンプ挿入を統合。
     - 回路サンプル（Circuit）対応のフォローアップ:
         - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
           各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。

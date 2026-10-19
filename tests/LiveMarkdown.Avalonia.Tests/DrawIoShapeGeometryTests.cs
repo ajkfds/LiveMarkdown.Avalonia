@@ -276,6 +276,66 @@ public class DrawIoShapeGeometryTests
     }
 
     [Test]
+    public void EdgeGeometry_RoundedBuildsWithoutThrowing()
+    {
+        _session.Dispatch(() =>
+        {
+            var style = DrawIoStyle.Parse("rounded=1;orthogonalEdgeStyle=1;");
+            var points = new[]
+            {
+                new Point(0, 0),
+                new Point(50, 0),
+                new Point(50, 50),
+                new Point(100, 50),
+            };
+
+            Geometry? geometry = null;
+            Assert.DoesNotThrow(() => geometry = DrawIoPresenter.BuildEdgeGeometryForTest(style, points));
+            Assert.That(geometry, Is.Not.Null);
+            Assert.That(geometry!.Bounds.Width, Is.EqualTo(100).Within(0.5));
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    [Test]
+    public void EdgeGeometry_CurvedBuildsWithoutThrowing()
+    {
+        _session.Dispatch(() =>
+        {
+            var style = DrawIoStyle.Parse("curved=1;");
+            var points = new[] { new Point(0, 0), new Point(50, 0), new Point(50, 50) };
+
+            Geometry? geometry = null;
+            Assert.DoesNotThrow(() => geometry = DrawIoPresenter.BuildEdgeGeometryForTest(style, points));
+            Assert.That(geometry, Is.Not.Null);
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    [Test]
+    public void TryIntersect_FindsCrossingSegments()
+    {
+        // Perpendicular crossing at (50, 50).
+        var hit = DrawIoPresenter.TryIntersect(
+            new Point(0, 50), new Point(100, 50),
+            new Point(50, 0), new Point(50, 100), out var result);
+
+        Assert.That(hit, Is.True);
+        Assert.That(result.X, Is.EqualTo(50).Within(0.001));
+        Assert.That(result.Y, Is.EqualTo(50).Within(0.001));
+
+        // Parallel segments never intersect.
+        var miss = DrawIoPresenter.TryIntersect(
+            new Point(0, 0), new Point(100, 0),
+            new Point(0, 10), new Point(100, 10), out _);
+        Assert.That(miss, Is.False);
+
+        // Segments that would cross only when extended do not count.
+        var noHit = DrawIoPresenter.TryIntersect(
+            new Point(0, 0), new Point(10, 0),
+            new Point(50, -10), new Point(50, 10), out _);
+        Assert.That(noHit, Is.False);
+    }
+
+    [Test]
     public void Process_HasFullBoundingBox()
     {
         _session.Dispatch(() =>
