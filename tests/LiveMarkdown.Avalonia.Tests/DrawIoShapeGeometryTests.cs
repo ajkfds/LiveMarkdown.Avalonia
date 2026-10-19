@@ -336,6 +336,44 @@ public class DrawIoShapeGeometryTests
     }
 
     [Test]
+    public void EntityRelationRoute_ConnectsTableSides()
+    {
+        _session.Dispatch(() =>
+        {
+            // Two tables side by side; ER routing should attach to the facing
+            // vertical sides at their centres, not the box centres.
+            var source = new DrawIoCell
+            {
+                Id = "s", IsVertex = true,
+                Geometry = new DrawIoGeometry { X = 40, Y = 40, Width = 80, Height = 40 }
+            };
+            source.AbsoluteX = 40;
+            source.AbsoluteY = 40;
+
+            var target = new DrawIoCell
+            {
+                Id = "t", IsVertex = true,
+                Geometry = new DrawIoGeometry { X = 260, Y = 160, Width = 80, Height = 40 }
+            };
+            target.AbsoluteX = 260;
+            target.AbsoluteY = 160;
+
+            var style = DrawIoStyle.Parse("edgeStyle=entityRelationEdgeStyle;html=1;");
+            var edge = new DrawIoCell { Id = "e", IsEdge = true, Style = style };
+
+            var route = DrawIoPresenter.BuildEdgePathForTest(edge, style, source, target);
+
+            Assert.That(route.Count, Is.GreaterThanOrEqualTo(2));
+            // Starts on the source's right side at its vertical centre.
+            Assert.That(route[0].X, Is.EqualTo(120).Within(0.001));
+            Assert.That(route[0].Y, Is.EqualTo(60).Within(0.001));
+            // Ends on the target's left side at its vertical centre.
+            Assert.That(route[^1].X, Is.EqualTo(260).Within(0.001));
+            Assert.That(route[^1].Y, Is.EqualTo(180).Within(0.001));
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    [Test]
     public void Process_HasFullBoundingBox()
     {
         _session.Dispatch(() =>
