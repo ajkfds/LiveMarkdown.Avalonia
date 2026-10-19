@@ -4,7 +4,7 @@
 
 ## 進行中のタスク
 
-- なし（WaveDrom プラグインの描画改善は一段落。ビルド成功・テスト全 190 件グリーン）
+- なし（WaveDrom プラグインの描画改善は一段落。DrawIo プラグインの新規追加も完了）
 
 ### 直近の修正（ビルド不通の解消）
 
@@ -25,10 +25,11 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 202 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 217 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
+    - DrawIo 関連は `DrawIoPresenterTests`（15 件、プラットフォーム不要）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -45,6 +46,37 @@
     - 公式 `wavedrom/test/*.svg` との座標比較
 
 ## 完了済みタスク
+
+- DrawIo プラグイン (`src/LiveMarkdown.Avalonia.DrawIo`) を新規追加
+    - WaveDrom プラグインと同構成で、` ```drawio ` フェンスを Markdig で検出し、
+      埋め込まれた draw.io (mxGraph) XML をネイティブ描画する Avalonia プラグイン。
+    - `DrawIoCodeBlock` / `DrawIoBlockParser` / `DrawIoExtension` / `UseDrawIo()` /
+      `DrawIoBlockNode`（フェンス未閉鎖時はソースをテキスト表示、閉鎖後に図を描画）。
+    - モデル (`Model/`):
+        - `DrawIoModel.cs` — セル・ジオメトリ・スタイル・ダイアグラム・ファイルのモデル。
+          `DrawIoStyle` は `key=value;flag` 形式をパースし、`fillColor` / `strokeColor` /
+          `strokeWidth` / `dashed` / `fontColor` / `fontSize` / `rounded` / `ellipse` /
+          `shape` / `polyCoords` などを解決。
+        - `DrawIoParser.cs` — `mxGraphModel` と `mxfile` の双方に対応。`<object>` ラッパーの
+          属性・label を取り込み、base64 + raw deflate + URI エンコードの圧縮 `diagram`
+          ペイロードも展開。親子の相対ジオメトリを絶対座標へ解決。
+        - `DrawIoLabelParser.cs` — HTML ラベル（`<b>`/`<i>`/`<span style="color:…">`/`<br>`）を
+          プレーンテキスト＋スタイル付きスパンに変換し、`%Placeholder%` を属性で置換。
+    - 描画 (`Rendering/`):
+        - `DrawIoShapeGeometry.cs` — 矩形・角丸矩形・楕円・三角形・汎用ポリゴン
+          （`mxgraph.basic.polygon` の `polyCoords`／`polyCurves` 二次曲線）を構築。
+        - `DrawIoPresenter.cs` — `Text`/`Foreground`/`BackgroundBrush`/`FontFamily`/
+          `FontSize`/`Scale` をスタイル可能プロパティとして公開。エッジ→頂点の順で描画し、
+          ウェイポイントを通る折れ線エッジ、classic/open 矢じり、`edgeLabel` 子セルと
+          エッジ本体の `value` ラベル（弧長中点基準、白背景ボックス付き）を描画。
+    - デモ (`src/LiveMarkdown.Avalonia.Demo`) に `UseDrawIo()` / `DrawIoBlockNode` 登録・
+      `Styles.axaml` 読み込み・`samples/DrawIo.md` を追加。ソリューション・テストプロジェクトに参照追加。
+    - テスト (`tests/LiveMarkdown.Avalonia.Tests/DrawIoPresenterTests.cs`, 15 件):
+      フェンス検出、`mxGraphModel`/`mxfile`/`<object>`/エッジ/相対ジオメトリ/圧縮ペイロードの
+      パース、スタイル・ラベル・プレースホルダ、`Measure` スモーク。
+    - 既知の制限: `mxfile` の最初のページのみ描画、特殊ステンシル形状は矩形へフォールバック、
+      エッジは保存済みウェイポイントを使用（自動ルーティングは再計算しない）、
+      画像・グラデーション・影・回転は未対応。
 
 - WaveDrom の描画品質・検証以外の未対応項目を実装
     - **phase の小数対応**: `phase * 2 + xmin_cfg` を half-brick 単位で保持し、
@@ -140,7 +172,13 @@
 
 ## Next Steps
 
-- 描画品質（残り）
+- DrawIo 描画品質（残り）
+    - 複数ページ `<mxfile>` のページ選択 UI／API
+    - 特殊ステンシル形状（`mxgraph.*` の各種プリセット）のジオメトリ対応
+    - 自動エッジルーティング（orthogonal/curved）と `exitX/entryX` 接続点の反映
+    - 画像・グラデーション・影・回転（`rotation` スタイル）の描画
+    - 圧縮ペイロードの `URL エンコード済み` 判定をより厳密化（現状は失敗時にヌル続行）
+- WaveDrom 描画品質（残り）
     - `config.skin`（narrow / dark 等の他スキン）。ブリック寸法（xs/ys）が default と異なるため未対応
     - `s1`〜`s16` の他スキン塗り色のテーマ連動
     - 公式 `text-width.js`（char-width.json）準拠のテキスト幅計測

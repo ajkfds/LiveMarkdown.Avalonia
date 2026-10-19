@@ -21,5 +21,6 @@
     <ProjectReference Include="..\..\src\LiveMarkdown.Avalonia.Math\LiveMarkdown.Avalonia.Math.csproj"/>
     <ProjectReference Include="..\..\src\LiveMarkdown.Avalonia.Mermaid\LiveMarkdown.Avalonia.Mermaid.csproj"/>
     <ProjectReference Include="..\..\src\LiveMarkdown.Avalonia.WaveDrom\LiveMarkdown.Avalonia.WaveDrom.csproj"/>
+    <ProjectReference Include="..\..\src\LiveMarkdown.Avalonia.DrawIo\LiveMarkdown.Avalonia.DrawIo.csproj"/>
   </ItemGroup>
 </Project>

@@ -7,6 +7,7 @@
     <shadui:ShadTheme/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
     <StyleInclude Source="avares://LiveMarkdown.Avalonia.Mermaid/Styles.axaml"/>
+    <StyleInclude Source="avares://LiveMarkdown.Avalonia.DrawIo/Styles.axaml"/>
 
     <Style Selector="md|MarkdownRenderer">
       <Style Selector="^ Span.Emphasis">

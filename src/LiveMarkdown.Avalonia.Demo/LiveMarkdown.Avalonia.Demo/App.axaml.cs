@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Logging;
@@ -17,12 +17,14 @@ public partial class App : Application, ILogSink
         MarkdownRenderer.ConfigurePipeline += x => x
             .UseMermaid()
             .UseWaveDrom()
+            .UseDrawIo()
             .UseExtendedMathematics();
         MarkdownNode.Edit(builder => builder
             .Register<MathInlineNode>()
             .Register<MathBlockNode>()
             .Register<MermaidBlockNode>()
             .Register<WaveDromBlockNode>()
+            .Register<DrawIoBlockNode>()
         );
 
         AsyncImageLoader.DefaultDecoders =
