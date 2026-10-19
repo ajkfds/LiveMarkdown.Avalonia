@@ -25,11 +25,14 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 221 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 239 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
-    - DrawIo 関連は `DrawIoPresenterTests`（19 件、プラットフォーム不要）
+    - DrawIo 関連は 3 フィクスチャ:
+        - `DrawIoPresenterTests`（24 件、プラットフォーム不要）
+        - `DrawIoShapeGeometryTests`（8 件、ヘッドレス）
+        - `DrawIoEdgeMarkerTests`（5 件、ヘッドレス）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -50,6 +53,17 @@
 - DrawIo プラグイン (`src/LiveMarkdown.Avalonia.DrawIo`) を新規追加
     - WaveDrom プラグインと同構成で、` ```drawio ` フェンスを Markdig で検出し、
       埋め込まれた draw.io (mxGraph) XML をネイティブ描画する Avalonia プラグイン。
+    - `TODO.md` を追加し、未対応項目を優先度順に整理。
+    - **項目1（基本図形）対応**: ひし形・六角形・平行四辺形・台形・ステップ・円柱・雲・
+      アクター・内部記憶・書類・手動入力・カード・注記・吹き出し・二重/片矢印・二重楕円・
+      線・プロセス・ループリミット・オフページコネクタ・テープ・遅延・キューブ・ディスプレイ・
+      データストレージを追加（`size`/`fixedSize`/`direction`/`flipH`/`flipV`/`rounded` 対応）。
+    - **項目2（矢印マーカー）対応**: `DrawIoEdgeMarker` を追加。`classic`/`classicThin`/
+      `block`/`blockThin`/`open`/`openThin`/`oval`/`diamond`/`diamondThin`/`async`/`box`/
+      `halfCircle`/`dash`/`baseDash`/`cross`/`circle`/`circlePlus`/`doubleBlock` と ER 系
+      (`ERone`/`ERmandOne`/`ERmany`/`ERoneToMany`/`ERzeroToOne`/`ERzeroToMany`) を描画。
+      `startFill`/`endFill`/`startSize`/`endSize` に対応。マーカーは `Geometry` として構築し
+      ヘッドレスでテスト可能。
     - 回路サンプル（Circuit）対応のフォローアップ:
         - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
           各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。
@@ -187,12 +201,14 @@
 
 ## Next Steps
 
-- DrawIo 描画品質（残り）
-    - 複数ページ `<mxfile>` のページ選択 UI／API
-    - 特殊ステンシル形状（`mxgraph.*` の各種プリセット）のジオメトリ対応
-    - 自動エッジルーティング（orthogonal/curved）と `exitX/entryX` 接続点の反映
-    - 画像・グラデーション・影・回転（`rotation` スタイル）の描画
-    - 圧縮ペイロードの `URL エンコード済み` 判定をより厳密化（現状は失敗時にヌル続行）
+- DrawIo 描画品質（残り、`src/LiveMarkdown.Avalonia.DrawIo/TODO.md` 参照）
+    - 項目3: 図形の変形・効果（rotation/flip/gradient/opacity/shadow/sketch/image）
+    - 項目4: テキスト・ラベル（斜体・下線・自動折り返し・縦書き・リッチHTML残り）
+    - 項目5: エッジ（`rounded=1` 角丸配線・他エッジスタイル・ベジェ・jumpStyle・
+      フローティング接続・複数マーカー連結）
+    - 項目6: 構造・ページ（複数ページ/レイヤー/折りたたみ/ページサイズ）
+    - 項目7: リンク・インクルードシェイプ・黄金画像テスト
+    - 補助マーカー `openAsync` / `manyOptional`
 - WaveDrom 描画品質（残り）
     - `config.skin`（narrow / dark 等の他スキン）。ブリック寸法（xs/ys）が default と異なるため未対応
     - `s1`〜`s16` の他スキン塗り色のテーマ連動

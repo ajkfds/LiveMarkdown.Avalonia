@@ -135,6 +135,74 @@ and rendered natively, without a JavaScript runtime or WebView.
   </root>
 </mxGraphModel>
 ```
+## Edge markers
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="a" value="A" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="40" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="b" value="B" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="100" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="c" value="C" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="160" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="d" value="D" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="220" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="e" value="E" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="280" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="f" value="F" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="340" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="g" value="G" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="400" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="h" value="H" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="460" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="i" value="I" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="40" y="520" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="x" value="Target" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+      <mxGeometry x="360" y="40" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="m1" value="classic" style="endArrow=classic;html=1;strokeWidth=2;" edge="1" parent="1" source="a" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m2" value="open" style="endArrow=open;html=1;strokeWidth=2;" edge="1" parent="1" source="b" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m3" value="block" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="c" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m4" value="diamond" style="endArrow=diamond;html=1;strokeWidth=2;" edge="1" parent="1" source="d" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m5" value="oval" style="endArrow=oval;html=1;strokeWidth=2;" edge="1" parent="1" source="e" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m6" value="async" style="endArrow=async;html=1;strokeWidth=2;" edge="1" parent="1" source="f" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m7" value="box" style="endArrow=box;html=1;strokeWidth=2;" edge="1" parent="1" source="g" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m8" value="circlePlus" style="endArrow=circlePlus;html=1;strokeWidth=2;" edge="1" parent="1" source="h" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="m9" value="ERmany" style="endArrow=ERmany;html=1;strokeWidth=2;" edge="1" parent="1" source="i" target="x">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Circuit
 
 ```drawio
