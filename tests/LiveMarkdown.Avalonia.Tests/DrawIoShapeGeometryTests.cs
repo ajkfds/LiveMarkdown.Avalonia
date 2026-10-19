@@ -156,6 +156,69 @@ public class DrawIoShapeGeometryTests
     }
 
     [Test]
+    public void EdgeEndpoint_ResolvesToPerimeterNotCenter()
+    {
+        _session.Dispatch(() =>
+        {
+            // A vertex at (0,0,100,40) with the other terminal far to the right:
+            // the endpoint must land on the right edge, not the center.
+            var cell = new DrawIoCell
+            {
+                Id = "a",
+                IsVertex = true,
+                Geometry = new DrawIoGeometry { X = 0, Y = 0, Width = 100, Height = 40 }
+            };
+            cell.AbsoluteX = 0;
+            cell.AbsoluteY = 0;
+
+            var style = DrawIoStyle.Parse("html=1;");
+            var endpoint = DrawIoPresenter.ResolveEndpoint(cell, style, isSource: true, toward: new Point(500, 20));
+
+            Assert.That(endpoint, Is.Not.Null);
+            Assert.That(endpoint!.Value.X, Is.EqualTo(100).Within(0.001));
+            Assert.That(endpoint.Value.Y, Is.EqualTo(20).Within(0.001));
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    [Test]
+    public void EdgeEndpoint_HonoursExplicitConnectionPoint()
+    {
+        _session.Dispatch(() =>
+        {
+            var cell = new DrawIoCell
+            {
+                Id = "a",
+                IsVertex = true,
+                Geometry = new DrawIoGeometry { X = 0, Y = 0, Width = 100, Height = 100 }
+            };
+            cell.AbsoluteX = 0;
+            cell.AbsoluteY = 0;
+
+            // exitX=0, exitY=0.5 -> left middle.
+            var style = DrawIoStyle.Parse("exitX=0;exitY=0.5;");
+            var endpoint = DrawIoPresenter.ResolveEndpoint(cell, style, isSource: true, toward: new Point(500, 50));
+
+            Assert.That(endpoint!.Value.X, Is.EqualTo(0).Within(0.001));
+            Assert.That(endpoint.Value.Y, Is.EqualTo(50).Within(0.001));
+        }, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    [Test]
+    public void RectanglePerimeter_ReturnsBoxEdgeIntersection()
+    {
+        // Ray from the centre straight right hits the right edge.
+        var p = DrawIoPresenter.RectanglePerimeter(new Point(50, 50), new Size(100, 40), 1, 0);
+        Assert.That(p, Is.Not.Null);
+        Assert.That(p!.Value.X, Is.EqualTo(100).Within(0.001));
+        Assert.That(p.Value.Y, Is.EqualTo(50).Within(0.001));
+
+        // Diagonal ray from the centre hits a corner of a square box.
+        var corner = DrawIoPresenter.RectanglePerimeter(new Point(0, 0), new Size(100, 100), 1, 1);
+        Assert.That(corner!.Value.X, Is.EqualTo(50).Within(0.001));
+        Assert.That(corner.Value.Y, Is.EqualTo(50).Within(0.001));
+    }
+
+    [Test]
     public void Process_HasFullBoundingBox()
     {
         _session.Dispatch(() =>
