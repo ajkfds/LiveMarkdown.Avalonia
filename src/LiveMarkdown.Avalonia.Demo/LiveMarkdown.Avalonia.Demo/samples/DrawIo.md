@@ -62,6 +62,32 @@ and rendered natively, without a JavaScript runtime or WebView.
 </mxGraphModel>
 ```
 
+## Labels
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="wrap" value="This label has whiteSpace=wrap so it wraps automatically to fit the shape width." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="60" y="60" width="160" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="styles" value="&lt;b&gt;bold&lt;/b&gt; &lt;i&gt;italic&lt;/i&gt;&lt;br&gt;second line" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="260" y="60" width="160" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="italic" value="Italic + Underline" style="rounded=0;whiteSpace=wrap;html=1;fontStyle=6;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="460" y="60" width="160" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="vert" value="Vertical" style="rounded=0;whiteSpace=wrap;html=1;horizontal=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="460" y="160" width="40" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="bg" value="Label background" style="text;html=1;align=center;verticalAlign=middle;labelBackgroundColor=#fff2cc;fontColor=#8b6c00;" vertex="1" parent="1">
+      <mxGeometry x="60" y="200" width="160" height="40" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Connected flow
 
 ```drawio

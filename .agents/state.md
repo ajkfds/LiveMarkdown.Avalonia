@@ -25,14 +25,15 @@
 - ブランチ: `main`（origin/main より多数コミット先行）
 - 作業対象: `src/LiveMarkdown.Avalonia.WaveDrom`（WaveDrom タイミング図のネイティブ描画プラグイン）
 - ドキュメント: `src/LiveMarkdown.Avalonia.WaveDrom/README.md`（概要・導入・使い方・制限事項）
-- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 249 件成功
+- テスト: `tests/LiveMarkdown.Avalonia.Tests` 全 255 件成功
     - WaveDrom 関連は 2 フィクスチャ・計 32 件
         - `WaveDromPresenterTests`（28 件、プラットフォーム不要）
         - `WaveDromGeometryTests`（4 件、ヘッドレスセッション上で `StreamGeometry` を生成）
-    - DrawIo 関連は 3 フィクスチャ:
+    - DrawIo 関連は 4 フィクスチャ:
         - `DrawIoPresenterTests`（24 件、プラットフォーム不要）
         - `DrawIoShapeGeometryTests`（16 件、ヘッドレス）
         - `DrawIoEdgeMarkerTests`（7 件、ヘッドレス）
+        - `DrawIoTextLayoutTests`（6 件、ヘッドレス）
 - 既知の未コミット差分: `3rd/shad-ui`（submodule の内容変更、本リポジトリ管理外）
 
 ### テストが検証している範囲（重要）
@@ -68,6 +69,9 @@
       `gradientColor`（縦グラデーション）・`opacity`/`fillOpacity`/`strokeOpacity`・
       `shadow`・`glass`・`dashPattern`（カスタム破線）を実装。`ShapeTransform` を draw.io の
       `mxSvgCanvas2D.rotate` に合わせて移植。
+    - **項目4（テキスト・ラベル）対応**: `DrawIoTextLayout` を追加。`fontStyle` の斜体(2)・
+      下線(4)、`whiteSpace=wrap` の自動折り返し（長い単語は強制分割）、縦書き (`horizontal=0`)、
+      ラベル背景 (`labelBackgroundColor`)、`verticalAlign` の top/bottom 配置を実装。
     - 回路サンプル（Circuit）対応のフォローアップ:
         - **polyCoords のパース修正**: 閉じ括弧で保留中の数値をフラッシュしていなかったため
           各ペアの 2 番目（y）が欠落し、ポートの五角形が描画されていなかった。修正済み。
@@ -206,8 +210,6 @@
 ## Next Steps
 
 - DrawIo 描画品質（残り、`src/LiveMarkdown.Avalonia.DrawIo/TODO.md` 参照）
-    - 項目3: 図形の変形・効果（rotation/flip/gradient/opacity/shadow/sketch/image）
-    - 項目4: テキスト・ラベル（斜体・下線・自動折り返し・縦書き・リッチHTML残り）
     - 項目5: エッジ（`rounded=1` 角丸配線・他エッジスタイル・ベジェ・jumpStyle・
       フローティング接続・複数マーカー連結）
     - 項目6: 構造・ページ（複数ページ/レイヤー/折りたたみ/ページサイズ）
