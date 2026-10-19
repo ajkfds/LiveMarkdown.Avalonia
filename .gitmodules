@@ -7,3 +7,6 @@
 [submodule "src/LiveMarkdown.Avalonia.WaveDrom"]
 	path = src/LiveMarkdown.Avalonia.WaveDrom
 	url = https://github.com/ajkfds/LiveMarkdown.Avalonia.WaveDrom.git
+[submodule "drawio"]
+	path = drawio
+	url = https://github.com/ajkfds/drawio.git
