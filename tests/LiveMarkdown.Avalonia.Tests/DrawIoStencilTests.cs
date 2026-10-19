@@ -119,4 +119,40 @@ public class DrawIoStencilTests
         Assert.That(DrawIoStencil.Contains(null), Is.False);
         Assert.That(DrawIoStencil.Contains(string.Empty), Is.False);
     }
+
+    [Test]
+    public void BuiltInLibrary_RegistersFlowchartStencils()
+    {
+        DrawIoStencilLibrary.RegisterBuiltIns();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.terminator"), Is.True);
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.decision"), Is.True);
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.predefined_process"), Is.True);
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.display"), Is.True);
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.sort"), Is.True);
+            Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.loop_limit"), Is.True);
+        });
+    }
+
+    [Test]
+    public void BuiltInLibrary_IsIdempotent()
+    {
+        DrawIoStencilLibrary.RegisterBuiltIns();
+        DrawIoStencilLibrary.RegisterBuiltIns();
+        Assert.That(DrawIoStencil.Contains("mxgraph.flowchart.terminator"), Is.True);
+    }
+
+    [Test]
+    public void PresetTable_StaysAuthoritativeOverShortStencilNames()
+    {
+        DrawIoStencilLibrary.RegisterBuiltIns();
+
+        // The flowchart stencils register a bare alias "process"/"document",
+        // which must not shadow the built-in preset geometry.
+        Assert.That(DrawIoShapeGeometry.IsPreset("process"), Is.True);
+        Assert.That(DrawIoShapeGeometry.IsPreset("document"), Is.True);
+        Assert.That(DrawIoShapeGeometry.IsPreset("decision"), Is.False);
+    }
 }

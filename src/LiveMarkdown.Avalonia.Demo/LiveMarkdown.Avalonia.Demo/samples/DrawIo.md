@@ -272,6 +272,57 @@ and rendered natively, without a JavaScript runtime or WebView.
 </mxGraphModel>
 ```
 
+## Stencil engine (mxgraph.flowchart.*)
+
+The generic `mxStencil` engine renders these shapes from bundled XML
+definitions (no per-shape C# code). Preset geometry stays authoritative where
+it exists, so e.g. `process` still uses the built-in variant.
+
+```drawio
+<mxGraphModel background="none">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="t" value="Start / End" style="shape=mxgraph.flowchart.terminator;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="40" y="40" width="120" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="pre" value="Predefined" style="shape=mxgraph.flowchart.predefined_process;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="200" y="40" width="140" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="doc" value="Document" style="shape=mxgraph.flowchart.document2;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="380" y="40" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="db" value="Database" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="560" y="40" width="100" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="mi" value="Manual input" style="shape=mxgraph.flowchart.manual_input;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="40" y="160" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="mo" value="Manual op" style="shape=mxgraph.flowchart.manual_operation;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="220" y="160" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="disp" value="Display" style="shape=mxgraph.flowchart.display;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+      <mxGeometry x="400" y="160" width="150" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="off" value="Off-page" style="shape=mxgraph.flowchart.off_page_reference;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+      <mxGeometry x="590" y="160" width="90" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="delay" value="Delay" style="shape=mxgraph.flowchart.delay;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+      <mxGeometry x="40" y="270" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="sd" value="Sequential" style="shape=mxgraph.flowchart.sequential_data;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="220" y="270" width="140" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="sort" value="Sort" style="shape=mxgraph.flowchart.sort;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+      <mxGeometry x="400" y="270" width="110" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="stored" value="Stored data" style="shape=mxgraph.flowchart.stored_data;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="560" y="270" width="130" height="70" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+```
+
 ## Labels with placeholders and markup
 
 ```drawio
