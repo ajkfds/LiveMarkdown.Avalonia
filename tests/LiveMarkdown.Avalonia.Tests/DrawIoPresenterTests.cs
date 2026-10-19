@@ -356,6 +356,73 @@ public class DrawIoPresenterTests
     }
 
     [Test]
+    public void EdgeLabelAnchor_CentersOnHorizontalEdgeAtZeroGeometry()
+    {
+        // geometry.x=0, y=0 -> travels (0/2 + 0.5) * length = midpoint.
+        var geometry = new DrawIoGeometry { Relative = true, X = 0, Y = 0 };
+        var anchor = DrawIoPresenter.ComputeEdgeLabelAnchor(
+            [new Point(0, 0), new Point(100, 0)], geometry);
+
+        Assert.That(anchor.X, Is.EqualTo(50).Within(0.001));
+        Assert.That(anchor.Y, Is.EqualTo(0).Within(0.001));
+    }
+
+    [Test]
+    public void EdgeLabelAnchor_ShiftsPerpendicularToSegment()
+    {
+        // geometry.y is a perpendicular (normal) offset, not a vertical shift.
+        // For a horizontal edge, a positive y moves the label up (SVG y grows
+        // down), matching mxGraphView.getPoint.
+        var geometry = new DrawIoGeometry { Relative = true, X = 0, Y = 8 };
+        var anchor = DrawIoPresenter.ComputeEdgeLabelAnchor(
+            [new Point(0, 0), new Point(100, 0)], geometry);
+
+        Assert.That(anchor.X, Is.EqualTo(50).Within(0.001));
+        Assert.That(anchor.Y, Is.EqualTo(-8).Within(0.001));
+    }
+
+    [Test]
+    public void EdgeLabelAnchor_MovesAlongEdgeForNonZeroX()
+    {
+        // x=-0.5 -> (-0.5/2 + 0.5) * length = 0.25 * length.
+        var geometry = new DrawIoGeometry { Relative = true, X = -0.5, Y = 0 };
+        var anchor = DrawIoPresenter.ComputeEdgeLabelAnchor(
+            [new Point(0, 0), new Point(100, 0)], geometry);
+
+        Assert.That(anchor.X, Is.EqualTo(25).Within(0.001));
+    }
+
+    [Test]
+    public void EdgeLabelAnchor_FollowsPolylineSegments()
+    {
+        // An L-shaped route: right then down. x=0 means the midpoint by arc
+        // length, i.e. the corner at (100, 0).
+        var geometry = new DrawIoGeometry { Relative = true, X = 0, Y = 0 };
+        var anchor = DrawIoPresenter.ComputeEdgeLabelAnchor(
+            [new Point(0, 0), new Point(100, 0), new Point(100, 100)], geometry);
+
+        Assert.That(anchor.X, Is.EqualTo(100).Within(0.001));
+        Assert.That(anchor.Y, Is.EqualTo(0).Within(0.001));
+    }
+
+    [Test]
+    public void EdgeLabelAnchor_AddsOffsetVerbatim()
+    {
+        var geometry = new DrawIoGeometry
+        {
+            Relative = true,
+            X = 0,
+            Y = 0,
+            Offset = new DrawIoPoint(5, -9)
+        };
+        var anchor = DrawIoPresenter.ComputeEdgeLabelAnchor(
+            [new Point(0, 0), new Point(100, 0)], geometry);
+
+        Assert.That(anchor.X, Is.EqualTo(55).Within(0.001));
+        Assert.That(anchor.Y, Is.EqualTo(-9).Within(0.001));
+    }
+
+    [Test]
     public void Measure_InvalidDiagramDoesNotThrow()
     {
         var presenter = new DrawIoPresenter { Text = "not xml" };
